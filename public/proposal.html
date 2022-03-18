@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="css/index.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="js/proposal.js"></script>
+    <title>NBA Data Viz Project | By: Dominic Fernandez</title>
+</head>
+<body class="default-background">
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light default-background">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">🏀 NBA Data Viz Project</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNavAltMarkup">
+        <div class="navbar-nav">
+          <a class="nav-link" aria-current="page" href="index.html">Home</a>
+          <a class="nav-link" href="proposal.html">Proposal</a>
+          <a class="nav-link" href="https://dom-portfolio.web.app/" target="_blank">Me</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <br>
+  <br>
+
+  <!-- Title -->
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <h1>Project Proposal</h1>
+      </div>
+    </div>
+    <hr>
+  </div>
+
+  <br>
+
+  <!-- Basic Information -->
+  <div class="container">
+      <div class="row">
+        <div class="col">
+            <h3>ℹ️ Basic Information</h3>
+        </div>
+      </div>
+      <div class="small-break"></div>
+      <div class="row">
+        <div class="col">
+          <ul class="medium-text">
+            <li><strong>Title:</strong> <span>Which teams, players, and playing styles have dominated the NBA since 1990?</span></li>
+            <li><strong>Name:</strong> <span>Dominic Fernandez</span></li>
+            <li><strong>Email:</strong> <a href="mailto:dcfernandez@dons.usfca.edu">dcfernandez@dons.usfca.edu</a></li>
+            <li><strong>Github Repo:</strong> <a href="https://github.com/dcfernandez1023/cs360-data-viz-proj">https://github.com/dcfernandez1023/cs360-data-viz-proj</a></li>
+          </ul>
+        </div>
+      </div>
+  </div>
+
+  <br>
+
+  <!-- Background & Motivation -->
+  <div class="container">
+    <div class="row">
+      <div class="col">
+          <h3>💡 Background & Motivation</h3>
+      </div>
+    </div>
+    <div class="small-break"></div>
+    <div class="row">
+      <div class="col">
+        <p class="medium-text">
+          This project is motivated by my love for <strong>coding</strong>, <strong>data</strong>, and <span class="orange-text">basketball</span>, a sport that I have played and watched for over 15 years.  When playing pick-up basketball with friends and watching NBA basketball, I often find myself making predictions, friendly bets, and analyzing how the game changes over the years.  I want to create a website that will give better insights about the NBA through data visualizations that show the teams, players, and playing styles that have been most dominant in the NBA since 1990.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <br>
+
+  <!-- Project Objectives -->
+  <div class="container">
+    <div class="row">
+      <div class="col">
+          <h3>🎯 Project Objectives</h3>
+      </div>
+    </div>
+    <div class="small-break"></div>
+    <div class="row">
+      <div class="col">
+        <p class="medium-text">
+          The main objective of this project is <strong>to use NBA data to visualize the best teams, players, and ways that the game has changed from the 1990s to today.</strong> Viewers will be able to learn:
+        </p>
+        <ul class="medium-text">
+          <li>
+            <span class="orange-highlight">The best teams of each season since 1990 and the statistics of those teams.</span>
+            Teams will be ranked by their standing at the end of the season (i.e. 1st place, 2nd place, etc.) and the team that won the championship that season will be marked as the best team for that season.
+          </li>
+          <li>
+            <span class="orange-highlight">The 5 best players of each season since 1990 and the statistics of those players.</span>
+            Players will be ranked by the statistical categories of points, rebounds, assists, and steals, and the player that won MVP of a given season will be marked as the best player for that season.
+          </li>
+          <li>
+            <span class="orange-highlight">The way the game has changed from 1990 vs. today.</span>
+            This objective will be measured by how average statistical categories change each season.  For example, the number of 3-pointers taken in the 2010-2011 season vs the 2020-2021 season.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <br>
+  
+  <!-- Data -->
+  <div class="container">
+    <div class="row">
+      <div class="col">
+          <h3>💾 Data</h3>
+      </div>
+    </div>
+    <div class="small-break"></div>
+    <div class="row">
+      <div class="col">
+        <ul class="medium-text">
+          <li><strong>📁 Source:</strong> <a href="https://www.nba.com/stats/">https://www.nba.com/stats/</a></li>
+          <li><strong>⚡ API:</strong> <a href="https://github.com/swar/nba_api">https://github.com/swar/nba_api</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <br>
+
+  <!-- Data Processing -->
+  <div class="container">
+    <div class="row">
+      <div class="col">
+          <h3>👨‍💻 Data Processing</h3>
+      </div>
+    </div>
+    <div class="small-break"></div>
+    <div class="row">
+      <div class="col">
+        <p class="medium-text">
+          The data will be collected via the python API mentioned in the <strong>💾 Data</strong> section. This JSON data will simply be transformed to CSV format using python. There will be one or more CSV files for each objective listed in the <strong>🎯 Project Objectives</strong> section. 
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <br>
+
+  <!-- Must-Have Features -->
+  <div class="container">
+    <div class="row">
+      <div class="col">
+          <h3>📌 Must-Have Features</h3>
+      </div>
+    </div>
+    <div class="small-break"></div>
+    <div class="row">
+      <div class="col">
+        <ul class="list-group list-group-flush medium-text">
+          <li class="list-group-item default-background">
+            <strong>Section 1: Title & Introduction</strong>
+            <ul>
+              <li>Title and introduction should be eye catching and visually pleasing</li>
+            </ul>
+          </li>
+          <li class="list-group-item default-background">
+            <strong>Section 2: Best Teams & Players</strong>
+            <ul>
+              <li>Data under each list category (Western Conference, Eastern Conference, Players) should change every 5 seconds, starting from 1990 and ending at 2022</li>
+              <li>User should be able to pause the current state of the time progression (i.e. stop at a specific season</li>
+              <li>Users should be able to manually select a season and the data will be rendered for the selected season.  For example, if the user selects the season 2010-2011, then the time progression should pause and the data shown will be the best teams and players from the 2010-2011 season</li>
+              <li>
+                Users should be able to drill-down on a specific player or team in any of the lists and a modal should pop up showing three different visualizations:
+                <ul>
+                  <li>Diverging bar chart representing the +/- of the player/team</li>
+                  <li>Bar chart that displays the amount of a statistic that a player/team had in each game of the selected season.  X-axis = game in the season(earliest → latest); Y-axis = amount of selected statistic.  These statistics should also be toggeable by the user.  For example, the user can first select “Points” as the variable being visualized, and the bar chart will display the data for “Points”.  If the user selects “Rebounds”, then the variable being visualized will switch to “Rebounds”.</li>
+                  <li>Shot chart (scatterplot) that displays the locations of all the shots that the player/team has taken.  The color red will be used to indicate if a shot is a miss, and the color green will be used to indicate that a shot is a make.</li>
+                </ul>
+              </li>
+              <li>Users should be able to close the pop-up modal when they are done visualizing the data and continue where they left off with viewing the lists of the best teams and players.</li>
+            </ul>
+          </li>
+          <li class="list-group-item default-background">
+            <strong>Section 3: How the Game has Changed Over Time</strong>
+            <ul>
+              <li>Line chart with toggleable variables.  X-axis = season (1990-91 → 2021-2022); Y-axis = amount of statistic</li>
+              <li>Line chart will have initial data that compares 3-point field goals (FGs) and 2-point FGs (as this is one of the statistics that has changed drastically over the years, as more and more players shoot 3-pointers today than before)</li>
+              <li>User will be able to remove the variables currently being graphed</li>
+              <li>User will be able to select more variables to be graphed</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <br>
+
+  <!-- Optional Features -->
+  <div class="container">
+    <div class="row">
+      <div class="col">
+          <h3>🎁 Optional Features</h3>
+      </div>
+    </div>
+    <div class="small-break"></div>
+    <div class="row">
+      <div class="col">
+        <ul class="medium-text">
+          <li>Make visualizations responsive to mobile devices (may not have the time to perfect this, but will try to do so)</li>
+          <li>GIFs on the introduction page</li>
+          <li>Toggleable speed for the time progression in Section 2</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <br>
+
+  <!-- Project Schedule -->
+  <div class="container">
+    <div class="row">
+      <div class="col">
+          <h3>📅 Project Schedule</h3>
+      </div>
+    </div>
+    <div class="small-break"></div>
+    <div class="row">
+      <div class="col">
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width: 75%; ">Task</th>
+                <th style="width: 20%; text-align: center;">Deadline</th>
+              </tr>
+            </thead>
+            <tbody id="projectScheduleBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <br>
+
+  <!-- Visualization Design -->
+  <div class="container">
+    <div class="row">
+      <div class="col">
+          <h3>🖌️ Visualization Design</h3>
+      </div>
+    </div>
+    <div class="small-break"></div>
+    <div class="row">
+      <div class="col">
+        <figure class="figure">
+          <img src="images/viz_design.png" class="figure-img img-fluid rounded" alt="...">
+        </figure>
+      </div>
+    </div>
+  </div>
+
+  <br>
+  <br>
+
+  <script>
+    renderProjectSchedule();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,29 @@
+.default-background {
+    background-color: #f0ebdc !important;
+}
+
+.header-secondary-text {
+    font-size: 25px;
+    color: #7b7d7d;
+}
+
+.small-break {
+    height: 15px;
+}
+
+.medium-text {
+    font-size: 20px !important;
+}
+
+.orange-text {
+    color: #DC7633;
+    font-weight: bold;
+}
+
+.orange-highlight {
+    background-color: #EDBB99;
+}
+
+.viz-design-img-width {
+    
+}
