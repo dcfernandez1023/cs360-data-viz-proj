@@ -3,7 +3,7 @@
 }
 
 .header-secondary-text {
-    font-size: 25px;
+    font-size: 20px;
     color: #7b7d7d;
 }
 
@@ -15,6 +15,10 @@
     font-size: 20px !important;
 }
 
+.medium-small-text {
+    font-size: 18px !important;
+}
+
 .orange-text {
     color: #DC7633;
     font-weight: bold;
@@ -24,6 +28,32 @@
     background-color: #EDBB99;
 }
 
-.viz-design-img-width {
-    
+.author-link {
+    text-decoration: underline;
+    color: black;
+
+}
+
+.center-align {
+    text-align: center !important;
+}
+
+.gif-width {
+    width: 270px;
+}
+
+.chicago-bulls {
+    color: #CB4335;
+}
+
+.la-lakers {
+    color: #9B59B6;
+}
+
+.bucks {
+    color: #1E8449;
+}
+
+.footer-color {
+    background-color: #E5E8E8 !important;
 }
