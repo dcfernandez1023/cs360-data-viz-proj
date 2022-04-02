@@ -7,6 +7,10 @@
     color: #7b7d7d;
 }
 
+.small-margin-bottom {
+    margin-bottom: 15px !important;
+}
+
 .small-break {
     height: 15px;
 }
@@ -56,4 +60,9 @@
 
 .footer-color {
     background-color: #E5E8E8 !important;
+}
+
+.season-dropdown {
+    background-color: #E59866 !important;
+    font-size: large !important;
 }
