@@ -237,31 +237,31 @@ const renderTeamStats = async (teamId, seasonOption) => {
             .attr("font-size", "12");
 
     // Draw bars 
-    svg.selectAll("rect")
-        .data(gameData)
-        .enter()
-            .append("rect")
-            .attr("x", (d) => {return xScale(d.date)})
-            .attr("y", (d) => {return yScale(d.points)})
-            .attr("width", xScale.bandwidth())
-            .attr("height", (d) => {return height - yScale(d.points)})
-            .attr("fill", (d) => {
-                // return d.winLoss === 0 ? "red" : "green";
-                return "#3498DB";
-            });
+    // svg.selectAll("rect")
+    //     .data(gameData)
+    //     .enter()
+    //         .append("rect")
+    //         .attr("x", (d) => {return xScale(d.date)})
+    //         .attr("y", (d) => {return yScale(d.points)})
+    //         .attr("width", xScale.bandwidth())
+    //         .attr("height", (d) => {return height - yScale(d.points)})
+    //         .attr("fill", (d) => {
+    //             // return d.winLoss === 0 ? "red" : "green";
+    //             return "#3498DB";
+    //         });
             // .attr("fill", "#27AE60");
 
     // Area chart
-    // svg.append("path")
-    //   .datum(gameData)
-    //   .attr("fill", "#AED6F1")
-    //   .attr("stroke", "#3498DB")
-    //   .attr("stroke-width", 1.5)
-    //   .attr("d", d3.area()
-    //     .x(function(d) { return xScale(d.date) })
-    //     .y0(yScale(0))
-    //     .y1(function(d) { return yScale(d.points) })
-    // )
+    svg.append("path")
+      .datum(gameData)
+      .attr("fill", "#AED6F1")
+      .attr("stroke", "#3498DB")
+      .attr("stroke-width", 1.5)
+      .attr("d", d3.area()
+        .x(function(d) { return xScale(d.date) })
+        .y0(yScale(0))
+        .y1(function(d) { return yScale(d.points) })
+    )
 }
 
 const renderWinLossBarChart = async (teamId, seasonOption) => {
