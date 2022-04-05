@@ -1,3 +1,21 @@
+var BEST_TEAMS = null;
+var BEST_PLAYERS = null;
+var TEAM_CONF_LOOKUP = null;
+var TEAM_STATS = null;
+
+const TEAM = "team";
+const PLAYER = "player";
+
+var SEASON_START = "1980";
+var SEASON_END = "1981";
+
+let VIZ_MODAL_PARENTS = [
+    "plus-minus",
+    "team-stats"
+]
+
+const MARGIN = {top: 30, right: 30, bottom: 30, left: 30};
+
 /**
  * 
  * @param {*} csvSrc - path/url to CSV file
@@ -12,9 +30,21 @@ const readJsonData = async (jsonSrc) => {
     return d3.json(jsonSrc);
 }
 
-const showVizModal = () => {
+const clearInnerHTML = (elemId) => {
+    document.getElementById(elemId).innerHTML = "";
+}
+
+const showVizModal = (id, listItemType) => {
+    VIZ_MODAL_PARENTS.forEach((vizParentId) => {
+        clearInnerHTML(vizParentId);
+    });
     var modal = new bootstrap.Modal(document.getElementById("viz-modal"), {});
     modal.show();
+    let seasonOption = SEASON_START + "-" + SEASON_END[2] + SEASON_END[3];
+    if(listItemType === TEAM) {
+        renderTeamStats(id, seasonOption);
+        renderWinLossBarChart(id, seasonOption);
+    }
 }
 
 /**
@@ -24,9 +54,9 @@ const showVizModal = () => {
  * @param {*} onClick - Event handler for when user selects the list element. Gets called as onClick(e, item, idKey)
  * @param {*} parentId - The id of the HTML element to append the list group to 
  */
-const renderListGroup = (data, labelKey, idKey, onClick, parentId) => {
+const renderListGroup = (data, labelKey, idKey, onClick, parentId, listItemType) => {
     let parentElement = document.getElementById(parentId);
-    parentElement.innerHTML = "";
+    clearInnerHTML(parentId);
     let listGroup = document.createElement("ul");
     listGroup.classList.add("list-group");
     data.forEach((item, index) => {
@@ -35,7 +65,7 @@ const renderListGroup = (data, labelKey, idKey, onClick, parentId) => {
         listItem.classList.add("list-group-item-action");
         let label = item[labelKey];
         listItem.innerHTML = (index+1).toString() + ". " + label;
-        listItem.onclick = (e) => {onClick(e, item, idKey)};
+        listItem.onclick = (e) => {onClick(e, item, idKey, listItemType)};
         listGroup.appendChild(listItem);
     });
     parentElement.appendChild(listGroup);
@@ -52,21 +82,34 @@ const evenOutList = (arr, maxSize, labelKey) => {
     }
 }
 
-const onClickListItem = (e, item, idKey) => {
-    showVizModal();
+const onClickListItem = (e, item, idKey, listItemType) => {
+    if(item[idKey] === undefined) {
+        return;
+    }
+    showVizModal(item[idKey], listItemType);
 }
 
 const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd) => {
-    let teamsData = await readCsvData("./data/team_standings.csv");
-    let playersData = await readCsvData("./data/player_stats.csv");
-    let team_conf_lookup = await readJsonData("./data/team_conf_lookup.json");
-    
+    // Start loader 
+    document.getElementById("section2-loader").style.display = "inline-block";
+
+    // Only read data files once
+    if(BEST_TEAMS === null) {
+        BEST_TEAMS = await readCsvData("./data/team_standings.csv");
+    }
+    if(BEST_PLAYERS === null) {
+        BEST_PLAYERS = await readCsvData("./data/player_stats.csv");
+    }
+    if(TEAM_CONF_LOOKUP === null) {
+        TEAM_CONF_LOOKUP = await readJsonData("./data/team_conf_lookup.json");
+    }
+
     // Get best teams by standing
     let bestEastTeams = [];
     let bestWestTeams = [];
-    teamsData.forEach((team) => {
+    BEST_TEAMS.forEach((team) => {
         if(team.seasonStart === seasonStart && team.seasonEnd === seasonEnd) {
-            if(team_conf_lookup[team.id] === "East") {
+            if(TEAM_CONF_LOOKUP[team.id] === "East") {
                 bestEastTeams.push(team);
             }
             else {
@@ -83,7 +126,7 @@ const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd) => {
 
     // Get best players by ranking
     let bestPlayers = [];
-    playersData.forEach((player) => {
+    BEST_PLAYERS.forEach((player) => {
         if(player.SEASON_START === seasonStart && player.SEASON_END === seasonEnd) {
             bestPlayers.push(player);
         }
@@ -92,7 +135,7 @@ const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd) => {
         return parseInt(player1.RANK) - parseInt(player2.RANK);
     });
     // Isolate 10 best players
-    tenBestPlayers = [];
+    let tenBestPlayers = [];
     for(var i = 0; i < 10; i++) {
         tenBestPlayers.push(bestPlayers[i]);
     }
@@ -104,25 +147,24 @@ const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd) => {
     evenOutList(tenBestPlayers, maxSize, "PLAYER");
 
     // Render best east teams 
-    renderListGroup(bestEastTeams, "name", "id", onClickListItem, "best-east-teams");
+    renderListGroup(bestEastTeams, "name", "id", onClickListItem, "best-east-teams", TEAM);
 
     // Render best west teams
-    renderListGroup(bestWestTeams, "name", "id", onClickListItem, "best-west-teams");
+    renderListGroup(bestWestTeams, "name", "id", onClickListItem, "best-west-teams", TEAM);
 
-    // Render best players 
-    renderListGroup(tenBestPlayers, "PLAYER", "PLAYER_ID", onClickListItem, "best-players");
-}
+    // Render best players
+    renderListGroup(tenBestPlayers, "PLAYER", "PLAYER_ID", onClickListItem, "best-players", PLAYER);
 
-const clearBestTeamsAndPlayers = () => {
-
+    // Stop loader
+    document.getElementById("section2-loader").style.display = "none";
 }
 
 const onSelectSeasonDropdown = (e, seasonOption, seasonStart, seasonEnd) => {
     let dropdownButton = document.getElementById("season-dropdown-button");
     dropdownButton.innerHTML = seasonOption;
-    console.log(seasonStart.toString());
-    console.log(seasonEnd.toString());
     renderBestTeamsAndPlayers(seasonStart, seasonEnd);
+    SEASON_START = seasonStart;
+    SEASON_END = seasonEnd;
 }
 
 const renderSeasonDropdownOptions = () => {
@@ -144,4 +186,197 @@ const renderSeasonDropdownOptions = () => {
 
         startYear++;
     }
+}
+
+const renderTeamStats = async (teamId, seasonOption) => {
+    clearInnerHTML("team-stats");
+
+    if(TEAM_STATS === null) {
+        console.log("Reading team stats file");
+        TEAM_STATS = await readJsonData("./data/team_stats_details.json");
+    }
+    let seasonData = TEAM_STATS[seasonOption];
+    let gameData = seasonData[teamId].games;
+    let teamName = seasonData[teamId].name;
+    document.getElementById("viz-modal-title").innerHTML = "<h3>" + teamName + " in the " + seasonOption + " Season</h3>";
+
+    // Produce bar chart
+    let xVals = gameData.map((game) => {
+        return game.date;
+    });
+
+    let yVals = gameData.map((game) => {
+        return game.points;
+    }); 
+    let parentCol = document.getElementById("section2-left-viz-col");
+    let height = 400;
+    let width = 1050;
+    let xScale = d3.scaleBand().domain(xVals).range([0, width]).padding(0.3);
+    let yScale = d3.scaleLinear().domain([0, d3.max(yVals)]).range([height, 0]);
+
+    let svg = d3.select("#team-stats")
+        .append("svg")
+            .attr("width", width + MARGIN.left + MARGIN.right)
+            .attr("height", height + MARGIN.top + MARGIN.bottom)
+        .append("g")
+            .attr("transform", "translate(" + MARGIN.left + "," + MARGIN.top + ")");
+
+    // Render x-axis
+    svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(xScale)
+            .tickFormat("")
+        )
+        .selectAll(".tick text")
+            .attr("font-size", "12");
+
+    // Render y-axis
+    svg.append("g")
+        .call(d3.axisLeft(yScale)
+        ).selectAll(".tick text")
+            .attr("font-size", "12");
+
+    // Draw bars 
+    svg.selectAll("rect")
+        .data(gameData)
+        .enter()
+            .append("rect")
+            .attr("x", (d) => {return xScale(d.date)})
+            .attr("y", (d) => {return yScale(d.points)})
+            .attr("width", xScale.bandwidth())
+            .attr("height", (d) => {return height - yScale(d.points)})
+            .attr("fill", (d) => {
+                // return d.winLoss === 0 ? "red" : "green";
+                return "#3498DB";
+            });
+            // .attr("fill", "#27AE60");
+
+    // Area chart
+    // svg.append("path")
+    //   .datum(gameData)
+    //   .attr("fill", "#AED6F1")
+    //   .attr("stroke", "#3498DB")
+    //   .attr("stroke-width", 1.5)
+    //   .attr("d", d3.area()
+    //     .x(function(d) { return xScale(d.date) })
+    //     .y0(yScale(0))
+    //     .y1(function(d) { return yScale(d.points) })
+    // )
+}
+
+const renderWinLossBarChart = async (teamId, seasonOption) => {
+    if(TEAM_STATS === null) {
+        console.log("Reading team stats file");
+        TEAM_STATS = await readJsonData("./data/team_stats_details.json");
+    }
+    let seasonData = TEAM_STATS[seasonOption];
+    let gameData = seasonData[teamId].games;
+    let teamName = seasonData[teamId].name;
+
+    // Negative values = losing streak. Ex: -1 = 1 game losing streak, -3 = 3 game losing streak
+    // Positive values = winning streak. Ex: 1 = 1 game win streak, 3 = 3 game win streak 
+    let winLossData = [];
+    for(var i = 0; i < gameData.length; i++) {
+        let game = gameData[i];
+        if(i-1 >= 0) {
+            let currentStreak = winLossData[i-1];
+            if(game.winLoss === 0) {
+                if(currentStreak < 0) {
+                    winLossData.push(currentStreak-1);
+                }
+                else {
+                    winLossData.push(-1);
+                }
+            }
+            else {
+                if(currentStreak > 0) {
+                    winLossData.push(currentStreak+1);
+                }
+                else {
+                    winLossData.push(1);
+                }
+            }
+        }
+        else {
+            winLossData.push(game.winLoss === 0 ? -1 : 1);
+        }
+    }
+    console.log(winLossData);
+
+    let xVals = winLossData.map((d, index) => {
+        return index;
+    });
+
+    let yVals = winLossData.map((d) => {
+        return d;
+    });
+
+    let height = 200;
+    let width = 1050;
+
+    console.log(xVals);
+
+    let minY = d3.min(yVals);
+    let maxY = d3.max(yVals);
+
+    let commonY = Math.max(Math.abs(minY), maxY);
+    minY = 0 - commonY;
+    maxY = Math.abs(commonY);
+
+    let xScale = d3.scaleBand().domain(xVals).range([0, width]).padding(0.3);
+    let yScale = d3.scaleLinear().domain([minY, maxY]).range([height, 0]);
+
+    let svg = d3.select("#plus-minus")
+        .append("svg")
+            .attr("width", width + MARGIN.left + MARGIN.right)
+            .attr("height", height + MARGIN.top + MARGIN.bottom)
+        .append("g")
+            .attr("transform", "translate(" + MARGIN.left + "," + MARGIN.top + ")");
+
+    // Render x-axis
+    svg.append("g")
+        .attr("transform", "translate(0," + height/2 + ")")
+        .call(d3.axisBottom(xScale)
+            .tickFormat("")
+        )
+        .selectAll(".tick text")
+            .attr("font-size", "12");
+
+    // Render y-axis
+    svg.append("g")
+        .call(d3.axisLeft(yScale)
+            .tickSize(-5)
+        ).selectAll(".tick text")
+            .attr("font-size", "12");
+
+    // Draw bars
+    svg.selectAll("rect")
+        .data(yVals)
+        .enter()
+            .append("rect")
+            .attr("x", (d, index) => {return xScale(index)})
+            .attr("y", (d) => {
+                if(d < 0) {
+                    return height/2;
+                }
+                return yScale(Math.abs(d));
+            })
+            .attr("width", xScale.bandwidth())
+            .attr("height", (d) => {
+                if(d < 0) {
+                    return height/2 - yScale(Math.abs(d));
+                }
+                return height/2 - yScale(Math.abs(d));
+                // if(d < 0) {
+                //     console.log(yScale(Math.abs(d)));
+                //     return yScaleNeg(d);
+                // }
+                // else {
+                //     return height/2 - yScale(d);
+                //}
+            })
+            .attr("fill", (d) => {
+                return d < 0 ? "#E74C3C" : "#229954";
+            })
+            .attr("")
 }

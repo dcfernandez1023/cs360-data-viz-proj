@@ -32,6 +32,14 @@
     background-color: #EDBB99;
 }
 
+.yellow-highlight {
+    background-color: #F7DC6F;
+}
+
+.indent {
+    margin-left: 20px;
+}
+
 .author-link {
     text-decoration: underline;
     color: black;

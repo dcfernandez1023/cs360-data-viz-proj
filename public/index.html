@@ -10,22 +10,10 @@
     <!-- D3 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script src="./js/section2.js"></script>
+    <script src="./js/section3.js"></script>
     <title>NBA Data Viz Project | By: Dominic Fernandez</title>
 </head>
 <body class="default-background">
-    <!-- Visualization Modal for Section 2
-    <div class="modal-xl fade" id="viz-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-      <div class="modal-dialog">
-      <div class="modal-content">
-          <div class="modal-header">
-              <h5 class="modal-title" id="staticBackdropLabel">Viz Modal</h5>
-          </div>
-          <div class="modal-body">
-            The visualizations will go here
-          </div>
-      </div>
-      </div>
-  </div> -->
 
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light default-background">
@@ -152,11 +140,34 @@
         <div id="best-players"></div>
       </div>
     </div>
+
+    <br>
+
+    <div class="row center-align">
+      <div class="col">
+        <div id="section2-loader" class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </div>
   </div> 
+
+  <br>
+  <br>
 
   <!-- Section 3: How the Game has Changed Over Time -->
   <div class="container">
-    
+    <div class="row center-align">
+      <div class="col">
+        <h2>Compare Statistical Categories Throughout the Years</h2>
+        <br>
+        <span class="badge rounded-pill" style="background-color: blue">3-Point Makes</span>
+        <span class="badge rounded-pill" style="background-color: green">Turnovers</span>
+        <div></div>
+        <br>
+        <div id="section-3-viz"></div>
+      </div>
+    </div>
   </div>
 
   <br>
@@ -164,37 +175,40 @@
   <br>
 
   <!-- Modal -->
-<div id="viz-modal" class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-  <div class="modal-dialog modal-fullscreen">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="staticBackdropLabel">Viz Modal</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        The visualizations will go here
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-  <!-- Footer -->
-  <!-- <nav class="navbar fixed-bottom navbar-light footer-color">
-    <div class="container">
-      <div class="row">
-        <div class="col">
-          <span>Made with ❤️ by <a class="author-link" href="https://dom-portfolio.web.app/" target="_blank">Dominic Fernandez</a></span>
+  <div id="viz-modal" class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="viz-modal-title" class="modal-title" id="staticBackdropLabel"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div id="viz-modal-body" class="modal-body">
+          <div class="row">
+            <div id ="section2-left-viz-col" class="col-lg-7">
+              <h5>Winning and Losing Streaks</h5>
+              <div id="plus-minus"></div>
+              <br>
+              <h5>Points per Game</h5>
+              <div id="team-stats">
+              </div>
+            </div>
+            <div class="col-lg-6"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
-  </nav> -->
+  </div>
 
   <script>
+    // Section 2 
     renderBestTeamsAndPlayers("1980", "1981");
     renderSeasonDropdownOptions();
+
+    // Section 3 
+    renderAvgStats();
   </script>
 
 </body>
