@@ -2,12 +2,14 @@ var SEASON_AVGS = null;
 var SELECTED_STAT = "3P";
 var SELECTED_STATS = [
     "3P",
-    "TOV"
+    "TOV",
+    "PTS"
 ];
 
 let STAT_COLORS = [
     "blue",
-    "green"
+    "green",
+    "orange"
 ]
 
 const renderAvgStats = async () => {
