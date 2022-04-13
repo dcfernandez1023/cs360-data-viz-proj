@@ -17,7 +17,6 @@ const renderAvgStats = async () => {
         SEASON_AVGS = await readCsvData("./data/season_avgs.csv");
         SEASON_AVGS.reverse();
     }
-    console.log(SEASON_AVGS);
 
     let width = 900;
     let height = 550;
@@ -40,7 +39,6 @@ const renderAvgStats = async () => {
     tickVals.push(xVals[parseInt(xVals.length * .5)]);
     tickVals.push(xVals[parseInt(xVals.length * .75)]);
     tickVals.push(xVals[xVals.length - 1]);
-    console.log(tickVals);
     let xScale = d3.scalePoint().domain(xVals).range([0, width]);
     svg.append("g")
         .attr("transform", "translate(0," + height + ")")
@@ -59,7 +57,6 @@ const renderAvgStats = async () => {
             return parseFloat(d[stat]);
         });
     });
-    console.log(yMax);
 
     // Render y-axis
     let yScale = d3.scaleLinear().domain([0, yMax]).range([height, 0]);

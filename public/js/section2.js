@@ -8,11 +8,23 @@ const PLAYER = "player";
 
 var SEASON_START = "1980";
 var SEASON_END = "1981";
+var SELECTED_TEAM_ID = "";
 
 let VIZ_MODAL_PARENTS = [
     "plus-minus",
     "team-stats"
 ]
+
+var VIZ_MODAL_BAR_VARS = [
+    {value: "points", display: "Points per Game"},
+    {value: "3pm", display: "3-point Makes per Game"},
+    {value: "steals", display: "Steals per Game"},
+    {value: "rebounds", display: "Rebounds per Game"},
+    {value: "turnovers", display: "Turnovers per Game"},
+    {value: "assists", display: "Assists per Game"},
+    {value: "blocks", display: "Blocks per Game"}
+];
+var VIZ_MODAL_BAR_VARIABLE = "points";
 
 const MARGIN = {top: 30, right: 30, bottom: 30, left: 30};
 
@@ -38,12 +50,15 @@ const showVizModal = (id, listItemType) => {
     VIZ_MODAL_PARENTS.forEach((vizParentId) => {
         clearInnerHTML(vizParentId);
     });
+    // Reset selected variable for stat per game visualization
+    VIZ_MODAL_BAR_VARIABLE = "points";
     var modal = new bootstrap.Modal(document.getElementById("viz-modal"), {});
     modal.show();
     let seasonOption = SEASON_START + "-" + SEASON_END[2] + SEASON_END[3];
     if(listItemType === TEAM) {
         renderTeamStats(id, seasonOption);
         renderWinLossBarChart(id, seasonOption);
+        SELECTED_TEAM_ID = id;
     }
 }
 
@@ -188,11 +203,42 @@ const renderSeasonDropdownOptions = () => {
     }
 }
 
+const onSelectVizModalVarDropdown = (selectedVar, display) => {
+    let seasonOption = SEASON_START + "-" + SEASON_END[2] + SEASON_END[3];
+    VIZ_MODAL_BAR_VARIABLE = selectedVar;
+    renderTeamStats(SELECTED_TEAM_ID, seasonOption);
+    document.getElementById("variable-dropdown-button").innerHTML = display;
+}
+
+const renderVizModalVarDropdown = () => {
+    let dropdownButton = document.getElementById("variable-dropdown-button");
+    let dropdownMenu = document.getElementById("variable-dropdown-menu");
+
+    // Clear children first
+    dropdownMenu.innerHTML = "";
+    dropdownButton.innerHTML = "";
+
+    // Set dropdownButton with default value
+    dropdownButton.innerHTML = VIZ_MODAL_BAR_VARS[0].display;
+
+    // Render options
+    VIZ_MODAL_BAR_VARS.forEach((metadata) => {
+        let dropdownItem = document.createElement("li");
+        let dropdownLink = document.createElement("a");
+        dropdownLink.classList.add("dropdown-item");
+        dropdownLink.innerHTML = metadata.display;
+        dropdownItem.onclick = (e) => {
+            onSelectVizModalVarDropdown(metadata.value, metadata.display);
+        }
+        dropdownItem.appendChild(dropdownLink);
+        dropdownMenu.appendChild(dropdownItem);
+    });
+}
+
 const renderTeamStats = async (teamId, seasonOption) => {
     clearInnerHTML("team-stats");
 
     if(TEAM_STATS === null) {
-        console.log("Reading team stats file");
         TEAM_STATS = await readJsonData("./data/team_stats_details.json");
     }
     let seasonData = TEAM_STATS[seasonOption];
@@ -206,7 +252,11 @@ const renderTeamStats = async (teamId, seasonOption) => {
     });
 
     let yVals = gameData.map((game) => {
-        return game.points;
+        if(game[VIZ_MODAL_BAR_VARIABLE] === null) {
+            console.log("is null");
+            return 0;
+        }
+        return game[VIZ_MODAL_BAR_VARIABLE];
     }); 
     let parentCol = document.getElementById("section2-left-viz-col");
     let height = 400;
@@ -237,36 +287,51 @@ const renderTeamStats = async (teamId, seasonOption) => {
             .attr("font-size", "12");
 
     // Draw bars 
-    // svg.selectAll("rect")
-    //     .data(gameData)
-    //     .enter()
-    //         .append("rect")
-    //         .attr("x", (d) => {return xScale(d.date)})
-    //         .attr("y", (d) => {return yScale(d.points)})
-    //         .attr("width", xScale.bandwidth())
-    //         .attr("height", (d) => {return height - yScale(d.points)})
-    //         .attr("fill", (d) => {
-    //             // return d.winLoss === 0 ? "red" : "green";
-    //             return "#3498DB";
-    //         });
-            // .attr("fill", "#27AE60");
+    svg.selectAll("rect")
+        .data(gameData)
+        .enter()
+            .append("rect")
+            .attr("x", (d) => {return xScale(d.date)})
+            .attr("y", (d) => {
+                try {
+                    return yScale(d[VIZ_MODAL_BAR_VARIABLE]);
+                }
+                catch(err) {
+                    alert("No data available for " + VIZ_MODAL_BAR_VARIABLE + " in this season");
+                }
+            })
+            .attr("width", xScale.bandwidth())
+            .attr("height", (d) => {
+                try {
+                    return height - yScale(d[VIZ_MODAL_BAR_VARIABLE]);
+                }
+                catch(err) {
+                    alert("No data available for " + VIZ_MODAL_BAR_VARIABLE + " in this season");
+                }
+            })
+            .attr("fill", (d) => {
+                // return d.winLoss === 0 ? "red" : "green";
+                return "#3498DB";
+            })
+            .attr("fill", "#3498DB");
+
+    renderVizModalVarDropdown();
 
     // Area chart
-    svg.append("path")
-      .datum(gameData)
-      .attr("fill", "#AED6F1")
-      .attr("stroke", "#3498DB")
-      .attr("stroke-width", 1.5)
-      .attr("d", d3.area()
-        .x(function(d) { return xScale(d.date) })
-        .y0(yScale(0))
-        .y1(function(d) { return yScale(d.points) })
-    )
+    // svg.append("path")
+    //   .datum(gameData)
+    //   .attr("fill", "#AED6F1")
+    //   .attr("stroke", "#3498DB")
+    //   .attr("stroke-width", 1.5)
+    //   .attr("d", d3.area()
+    //     .x(function(d) { return xScale(d.date) })
+    //     .y0(yScale(0))
+    //     .y1(function(d) { return yScale(d.points) })
+    // )
 }
 
 const renderWinLossBarChart = async (teamId, seasonOption) => {
     if(TEAM_STATS === null) {
-        console.log("Reading team stats file");
         TEAM_STATS = await readJsonData("./data/team_stats_details.json");
     }
     let seasonData = TEAM_STATS[seasonOption];
@@ -301,7 +366,6 @@ const renderWinLossBarChart = async (teamId, seasonOption) => {
             winLossData.push(game.winLoss === 0 ? -1 : 1);
         }
     }
-    console.log(winLossData);
 
     let xVals = winLossData.map((d, index) => {
         return index;
@@ -313,8 +377,6 @@ const renderWinLossBarChart = async (teamId, seasonOption) => {
 
     let height = 200;
     let width = 1050;
-
-    console.log(xVals);
 
     let minY = d3.min(yVals);
     let maxY = d3.max(yVals);
