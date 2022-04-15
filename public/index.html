@@ -11,6 +11,9 @@
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script src="./js/section2.js"></script>
     <script src="./js/section3.js"></script>
+
+    <link rel="stylesheet" href="js/range-slider-master/css/rSlider.min.css">
+    <script src="js/range-slider-master/js/rSlider.min.js"></script>
     <title>NBA Data Viz Project | By: Dominic Fernandez</title>
 </head>
 <body class="default-background">
@@ -159,13 +162,31 @@
   <div class="container">
     <div class="row center-align">
       <div class="col">
-        <h2>Compare Statistical Categories Throughout the Years</h2>
+        <h2>Compare Statistical Averages Throughout the Years</h2>
         <br>
-        <span class="badge rounded-pill" style="background-color: blue">3-Point Makes</span>
-        <span class="badge rounded-pill" style="background-color: green">Turnovers</span>
+        <div id="stat-season-avgs">
+          <span class="dropdown">
+            <button id="statavg-dropdown-button" class="btn btn-light dropdown-toggle season-dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Statistics
+            </button>
+            <ul id="statavg-dropdown-menu" class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+            </ul>
+          </span>
+        </div>
+        <br> 
+        <div id="stat-badges">
+          <span id="3P" class="badge rounded-pill" style="background-color: #E74C3C">3-Point Makes</span>
+        </div>
         <div></div>
         <br>
         <div id="section-3-viz"></div>
+      </div>
+    </div>
+    <br>
+    <br>
+    <div class="row">
+      <div class="col">
+        <input type="text" id="slider" class="slider">
       </div>
     </div>
   </div>
@@ -219,6 +240,7 @@
 
     // Section 3 
     renderAvgStats();
+    renderGraphSlider();
   </script>
 
 </body>

@@ -28,6 +28,10 @@ var VIZ_MODAL_BAR_VARIABLE = "points";
 
 const MARGIN = {top: 30, right: 30, bottom: 30, left: 30};
 
+const generateRectId = (d) => {
+    return (d.matchup + d.date).replace(/\s+/g, '').replace(/\./g,'').replace(/\,/g,'').replace(/\@/g,'');
+}
+
 /**
  * 
  * @param {*} csvSrc - path/url to CSV file
@@ -236,7 +240,13 @@ const renderVizModalVarDropdown = () => {
 }
 
 const renderTeamStats = async (teamId, seasonOption) => {
+
     clearInnerHTML("team-stats");
+
+    // Initialize tooltip
+    var tooltip = d3.select("body").append("span")	
+        .attr("class", "tooltip")				
+        .style("opacity", 0);
 
     if(TEAM_STATS === null) {
         TEAM_STATS = await readJsonData("./data/team_stats_details.json");
@@ -258,7 +268,7 @@ const renderTeamStats = async (teamId, seasonOption) => {
         }
         return game[VIZ_MODAL_BAR_VARIABLE];
     }); 
-    let parentCol = document.getElementById("section2-left-viz-col");
+
     let height = 400;
     let width = 1050;
     let xScale = d3.scaleBand().domain(xVals).range([0, width]).padding(0.3);
@@ -291,6 +301,7 @@ const renderTeamStats = async (teamId, seasonOption) => {
         .data(gameData)
         .enter()
             .append("rect")
+            .attr("id", (d) => {return generateRectId(d)})
             .attr("x", (d) => {return xScale(d.date)})
             .attr("y", (d) => {
                 try {
@@ -310,10 +321,29 @@ const renderTeamStats = async (teamId, seasonOption) => {
                 }
             })
             .attr("fill", (d) => {
-                // return d.winLoss === 0 ? "red" : "green";
-                return "#3498DB";
+                return d.winLoss === 0 ? "#EC7063" : "#52BE80";
             })
-            .attr("fill", "#3498DB");
+            .on("mouseover", (e, d) => {
+                let rectId = generateRectId(d);
+                d3.select("#" + rectId)
+                    .style("stroke", "black");
+                tooltip.transition()		
+                    .duration(200)		
+                    .style("opacity", .9);		
+                tooltip.html(d.date + "<br>" + d.matchup + "<br>Points Scored: " + d.points + "<br>Result: " + (d.winLoss === 0 ? "Loss" : "Win"))	
+                    .style("padding", "8px")
+                    .style("left", (e.pageX) + "px")		
+                    .style("top", (e.pageY+15) + "px")
+                    .style("background-color", "#D6DBDF");
+                })
+            .on("mouseout", (e, d) => {		
+                let rectId = generateRectId(d);
+                d3.select("#" + rectId)
+                    .style("stroke", "none");
+                tooltip.transition()		
+                    .duration(500)	
+                    .style("opacity", 0);	
+            });
 
     renderVizModalVarDropdown();
 
@@ -388,6 +418,11 @@ const renderWinLossBarChart = async (teamId, seasonOption) => {
     let xScale = d3.scaleBand().domain(xVals).range([0, width]).padding(0.3);
     let yScale = d3.scaleLinear().domain([minY, maxY]).range([height, 0]);
 
+    // Initialize tooltip
+    var tooltip = d3.select("body").append("span")	
+        .attr("class", "tooltip")				
+        .style("opacity", 0);
+
     let svg = d3.select("#plus-minus")
         .append("svg")
             .attr("width", width + MARGIN.left + MARGIN.right)
@@ -411,34 +446,70 @@ const renderWinLossBarChart = async (teamId, seasonOption) => {
         ).selectAll(".tick text")
             .attr("font-size", "12");
 
-    // Draw bars
-    svg.selectAll("rect")
+    svg.selectAll("circle")
         .data(yVals)
         .enter()
-            .append("rect")
-            .attr("x", (d, index) => {return xScale(index)})
-            .attr("y", (d) => {
-                if(d < 0) {
-                    return height/2;
-                }
-                return yScale(Math.abs(d));
-            })
-            .attr("width", xScale.bandwidth())
-            .attr("height", (d) => {
-                if(d < 0) {
-                    return height/2 - yScale(Math.abs(d));
-                }
-                return height/2 - yScale(Math.abs(d));
-                // if(d < 0) {
-                //     console.log(yScale(Math.abs(d)));
-                //     return yScaleNeg(d);
-                // }
-                // else {
-                //     return height/2 - yScale(d);
-                //}
-            })
-            .attr("fill", (d) => {
-                return d < 0 ? "#E74C3C" : "#229954";
-            })
-            .attr("")
+            .append("circle")
+                .attr("cx", (d, index) => {return xScale(index)+4})
+                .attr("cy", (d) => {return yScale(d)})
+                .attr("r", 4.5)
+                .attr("fill", "#2E86C1")
+                .on("mouseover", (e, d) => {
+                    tooltip.transition()		
+                        .duration(200)		
+                        .style("opacity", .9);		
+                    tooltip.html((d > 0) ? "🏆 Winning Streak: " + d : "❌ Losing Streak: " + Math.abs(d))	
+                        .style("padding", "8px")
+                        .style("left", (e.pageX) + "px")		
+                        .style("top", (e.pageY+15) + "px")
+                        .style("background-color", "#D6DBDF");
+                    })
+                .on("mouseout", (e, d) => {		
+                    tooltip.transition()		
+                        .duration(500)	
+                        .style("opacity", 0);	
+                });
+
+    // Draw lines
+    svg.append("path")
+        .datum(yVals)
+        .attr("fill", "none")
+        .attr("stroke", (d) => {
+            return "#5DADE2"
+        })
+        .attr("stroke-width", 1.5)
+        .attr("d", d3.line()
+            .x((d, index) => { return xScale(index)+4})
+            .y((d) => {return yScale(d)})
+        );
+
+    // Draw bars
+    // svg.selectAll("rect")
+    //     .data(yVals)
+    //     .enter()
+    //         .append("rect")
+    //         .attr("x", (d, index) => {return xScale(index)})
+    //         .attr("y", (d) => {
+    //             if(d < 0) {
+    //                 return height/2;
+    //             }
+    //             return yScale(Math.abs(d));
+    //         })
+    //         .attr("width", xScale.bandwidth())
+    //         .attr("height", (d) => {
+    //             if(d < 0) {
+    //                 return height/2 - yScale(Math.abs(d));
+    //             }
+    //             return height/2 - yScale(Math.abs(d));
+    //             // if(d < 0) {
+    //             //     console.log(yScale(Math.abs(d)));
+    //             //     return yScaleNeg(d);
+    //             // }
+    //             // else {
+    //             //     return height/2 - yScale(d);
+    //             //}
+    //         })
+    //         .attr("fill", (d) => {
+    //             return d < 0 ? "#E74C3C" : "#229954";
+    //         });
 }
