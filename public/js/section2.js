@@ -2,13 +2,17 @@ var BEST_TEAMS = null;
 var BEST_PLAYERS = null;
 var TEAM_CONF_LOOKUP = null;
 var TEAM_STATS = null;
+var PLAYER_STATS = null;
 
 const TEAM = "team";
 const PLAYER = "player";
 
+var MODAL_TYPE = "";
+
 var SEASON_START = "1980";
 var SEASON_END = "1981";
 var SELECTED_TEAM_ID = "";
+var SELECTED_PLAYER_ID = "";
 
 let VIZ_MODAL_PARENTS = [
     "plus-minus",
@@ -24,6 +28,15 @@ var VIZ_MODAL_BAR_VARS = [
     {value: "assists", display: "Assists per Game"},
     {value: "blocks", display: "Blocks per Game"}
 ];
+var VIZ_MODAL_BAR_VAR_DISPLAY = {
+    "points": "Points",
+    "3pm": "3-point Makes",
+    "steals": "Steals",
+    "rebounds": "Rebounds",
+    "turnovers": "Turnovers",
+    "assists": "Assists",
+    "blocks": "Blocks"
+};
 var VIZ_MODAL_BAR_VARIABLE = "points";
 
 const MARGIN = {top: 30, right: 30, bottom: 30, left: 30};
@@ -56,14 +69,134 @@ const showVizModal = (id, listItemType) => {
     });
     // Reset selected variable for stat per game visualization
     VIZ_MODAL_BAR_VARIABLE = "points";
-    var modal = new bootstrap.Modal(document.getElementById("viz-modal"), {});
-    modal.show();
     let seasonOption = SEASON_START + "-" + SEASON_END[2] + SEASON_END[3];
     if(listItemType === TEAM) {
+        MODAL_TYPE = TEAM;
         renderTeamStats(id, seasonOption);
         renderWinLossBarChart(id, seasonOption);
         SELECTED_TEAM_ID = id;
     }
+    else if(listItemType === PLAYER) {
+        MODAL_TYPE = PLAYER;
+        renderPlayerStats(id, seasonOption);
+        SELECTED_PLAYER_ID = id;
+    }
+    var modal = new bootstrap.Modal(document.getElementById("viz-modal"), {});
+    modal.show();
+}
+
+const renderPlayerStats = async (playerId, seasonOption) => {
+    clearInnerHTML("team-stats");
+
+    // Initialize tooltip
+    var tooltip = d3.select("body").append("span")	
+        .attr("class", "tooltip")				
+        .style("opacity", 0);
+
+    if(PLAYER_STATS === null) {
+        PLAYER_STATS = await readJsonData("./data/player_gamelog.json");
+    }
+    let startSeason = parseInt(seasonOption.split("-")[0])
+    let endSeason = (startSeason + 1).toString();
+    seasonOption = startSeason.toString() + "-" + endSeason;
+    let seasonData = PLAYER_STATS[seasonOption];
+    let gameData = seasonData[playerId];
+    let playerName = gameData[0].player_name;
+    document.getElementById("viz-modal-title").innerHTML = "<h3>" + playerName + " in the " + seasonOption + " Season</h3>";
+
+    // Produce bar chart
+    let xVals = gameData.map((game) => {
+        return game.date;
+    });
+
+    let yVals = gameData.map((game) => {
+        if(game[VIZ_MODAL_BAR_VARIABLE] === null) {
+            return 0;
+        }
+        return game[VIZ_MODAL_BAR_VARIABLE];
+    }); 
+
+    let height = 400;
+    let width = 1050;
+    let xScale = d3.scaleBand().domain(xVals).range([0, width]).padding(0.3);
+    let yScale = d3.scaleLinear().domain([0, d3.max(yVals)]).range([height, 0]);
+
+    let svg = d3.select("#team-stats")
+        .append("svg")
+            .attr("width", width + MARGIN.left + MARGIN.right)
+            .attr("height", height + MARGIN.top + MARGIN.bottom)
+        .append("g")
+            .attr("transform", "translate(" + MARGIN.left + "," + MARGIN.top + ")");
+
+    // Render x-axis
+    svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(xScale)
+            .tickFormat("")
+        )
+        .selectAll(".tick text")
+            .attr("font-size", "12");
+
+    // Render y-axis
+    svg.append("g")
+        .call(d3.axisLeft(yScale)
+        ).selectAll(".tick text")
+            .attr("font-size", "12");
+
+    // Draw bars 
+    svg.selectAll("rect")
+        .data(gameData)
+        .enter()
+            .append("rect")
+            .attr("id", (d) => {return generateRectId(d)})
+            .attr("x", (d) => {return xScale(d.date)})
+            .attr("y", (d) => {
+                try {
+                    return yScale(d[VIZ_MODAL_BAR_VARIABLE]);
+                }
+                catch(err) {
+                    alert("No data available for " + VIZ_MODAL_BAR_VARIABLE + " in this season");
+                }
+            })
+            .attr("width", xScale.bandwidth())
+            .attr("height", (d) => {
+                try {
+                    return height - yScale(d[VIZ_MODAL_BAR_VARIABLE]);
+                }
+                catch(err) {
+                    alert("No data available for " + VIZ_MODAL_BAR_VARIABLE + " in this season");
+                }
+            })
+            .attr("fill", (d) => {
+                return d.winLoss === 0 ? "#EC7063" : "#52BE80";
+            })
+            .on("mouseover", (e, d) => {
+                let rectId = generateRectId(d);
+                d3.select("#" + rectId)
+                    .style("stroke", "black");
+                tooltip.transition()		
+                    .duration(200)		
+                    .style("opacity", .9);		
+                tooltip.html(d.date + "<br>" + d.matchup + "<br>" + VIZ_MODAL_BAR_VAR_DISPLAY[VIZ_MODAL_BAR_VARIABLE] + ": " + d[VIZ_MODAL_BAR_VARIABLE])	
+                    .style("padding", "8px")
+                    .style("left", (e.pageX) + "px")		
+                    .style("top", (e.pageY+15) + "px")
+                    .style("background-color", "#D6DBDF");
+                })
+            .on("mouseout", (e, d) => {		
+                let rectId = generateRectId(d);
+                d3.select("#" + rectId)
+                    .style("stroke", "none");
+                tooltip.transition()		
+                    .duration(500)	
+                    .style("opacity", 0);	
+            });
+
+    renderVizModalVarDropdown();
+}
+
+const renderPlusMinusStats = (id, seasonOption) => {
+
 }
 
 /**
@@ -210,7 +343,12 @@ const renderSeasonDropdownOptions = () => {
 const onSelectVizModalVarDropdown = (selectedVar, display) => {
     let seasonOption = SEASON_START + "-" + SEASON_END[2] + SEASON_END[3];
     VIZ_MODAL_BAR_VARIABLE = selectedVar;
-    renderTeamStats(SELECTED_TEAM_ID, seasonOption);
+    if(MODAL_TYPE === TEAM) {
+        renderTeamStats(SELECTED_TEAM_ID, seasonOption);
+    }
+    else if(MODAL_TYPE === PLAYER) {
+        renderPlayerStats(SELECTED_PLAYER_ID, seasonOption);
+    }
     document.getElementById("variable-dropdown-button").innerHTML = display;
 }
 
@@ -240,7 +378,6 @@ const renderVizModalVarDropdown = () => {
 }
 
 const renderTeamStats = async (teamId, seasonOption) => {
-
     clearInnerHTML("team-stats");
 
     // Initialize tooltip
@@ -263,7 +400,6 @@ const renderTeamStats = async (teamId, seasonOption) => {
 
     let yVals = gameData.map((game) => {
         if(game[VIZ_MODAL_BAR_VARIABLE] === null) {
-            console.log("is null");
             return 0;
         }
         return game[VIZ_MODAL_BAR_VARIABLE];
@@ -330,7 +466,7 @@ const renderTeamStats = async (teamId, seasonOption) => {
                 tooltip.transition()		
                     .duration(200)		
                     .style("opacity", .9);		
-                tooltip.html(d.date + "<br>" + d.matchup + "<br>Points Scored: " + d.points + "<br>Result: " + (d.winLoss === 0 ? "Loss" : "Win"))	
+                tooltip.html(d.date + "<br>" + d.matchup + "<br>" + VIZ_MODAL_BAR_VAR_DISPLAY[VIZ_MODAL_BAR_VARIABLE] + ": " + d[VIZ_MODAL_BAR_VARIABLE] + "<br>Result: " + (d.winLoss === 0 ? "Loss" : "Win"))	
                     .style("padding", "8px")
                     .style("left", (e.pageX) + "px")		
                     .style("top", (e.pageY+15) + "px")
@@ -346,18 +482,6 @@ const renderTeamStats = async (teamId, seasonOption) => {
             });
 
     renderVizModalVarDropdown();
-
-    // Area chart
-    // svg.append("path")
-    //   .datum(gameData)
-    //   .attr("fill", "#AED6F1")
-    //   .attr("stroke", "#3498DB")
-    //   .attr("stroke-width", 1.5)
-    //   .attr("d", d3.area()
-    //     .x(function(d) { return xScale(d.date) })
-    //     .y0(yScale(0))
-    //     .y1(function(d) { return yScale(d.points) })
-    // )
 }
 
 const renderWinLossBarChart = async (teamId, seasonOption) => {
