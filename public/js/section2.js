@@ -3,11 +3,17 @@ var BEST_PLAYERS = null;
 var TEAM_CONF_LOOKUP = null;
 var TEAM_STATS = null;
 var PLAYER_STATS = null;
+var PLAYER_SHOTLOG = null;
+var TEAM_SHOTLOG = null;
 
 const TEAM = "team";
 const PLAYER = "player";
 
 var MODAL_TYPE = "";
+
+var TIME_SERIES_INTERVAL_F = null;
+
+var SEASON_STOP = 2020;
 
 var SEASON_START = "1980";
 var SEASON_END = "1981";
@@ -45,6 +51,16 @@ const generateRectId = (d) => {
     return (d.matchup + d.date).replace(/\s+/g, '').replace(/\./g,'').replace(/\,/g,'').replace(/\@/g,'');
 }
 
+const stopTimeProgression = () => {
+    clearInterval(TIME_SERIES_INTERVAL_F);
+    TIME_SERIES_INTERVAL_F = null;
+    let startStopBtn = document.getElementById("start-stop-progression");
+    startStopBtn.innerHTML = "▶️ Start";
+    startStopBtn.onclick = () => {
+        renderBestTeamsAndPlayers(SEASON_START, SEASON_END, true);
+    }
+}
+
 /**
  * 
  * @param {*} csvSrc - path/url to CSV file
@@ -63,6 +79,30 @@ const clearInnerHTML = (elemId) => {
     document.getElementById(elemId).innerHTML = "";
 }
 
+const loadVizData = async (callback, onErr) => {
+    try {
+        if(BEST_TEAMS === null) {
+            BEST_TEAMS = await readCsvData("./data/team_standings.csv");
+        }
+        if(BEST_PLAYERS === null) {
+            BEST_PLAYERS = await readCsvData("./data/player_stats.csv");
+        }
+        if(TEAM_CONF_LOOKUP === null) {
+            TEAM_CONF_LOOKUP = await readJsonData("./data/team_conf_lookup.json");
+        }
+        if(TEAM_STATS === null) {
+            TEAM_STATS = await readJsonData("./data/team_stats_details.json");
+        }
+        if(PLAYER_SHOTLOG === null) {
+            PLAYER_SHOTLOG = await readJsonData("./data/player_shotlog.json");
+        }
+        callback();
+    }
+    catch(err) {
+        onErr(err);
+    }
+}
+
 const showVizModal = (id, listItemType) => {
     VIZ_MODAL_PARENTS.forEach((vizParentId) => {
         clearInnerHTML(vizParentId);
@@ -74,6 +114,7 @@ const showVizModal = (id, listItemType) => {
         MODAL_TYPE = TEAM;
         renderTeamStats(id, seasonOption);
         renderWinLossBarChart(id, seasonOption);
+        renderShotLog(id, seasonOption, TEAM);
         SELECTED_TEAM_ID = id;
         document.getElementById("diverging-line-title").innerHTML = "Winning and Losing Streaks";
     }
@@ -81,11 +122,103 @@ const showVizModal = (id, listItemType) => {
         MODAL_TYPE = PLAYER;
         renderPlayerStats(id, seasonOption);
         renderPlayerPlusMinus(id, seasonOption);
+        renderShotLog(id, seasonOption, PLAYER);
         SELECTED_PLAYER_ID = id;
         document.getElementById("diverging-line-title").innerHTML = "Plus Minus (+/-)";
     }
     var modal = new bootstrap.Modal(document.getElementById("viz-modal"), {});
     modal.show();   
+}
+
+const generateShotLogTooltip = (d, type) => {
+    let year = parseInt(d.GAME_DATE[0] + d.GAME_DATE[1] + d.GAME_DATE[2] + d.GAME_DATE[3]);
+    let month = parseInt(d.GAME_DATE[4] + d.GAME_DATE[5]);
+    let day = parseInt(d.GAME_DATE[6] + d.GAME_DATE[7]);
+    let gameDate = new Date(year, month-1, day);
+    let makeMiss = "<strong>Result:</strong> " + (d.SHOT_MADE_FLAG === 0 ? "Miss" : "Make");
+    let tooltipText = "";
+    if(type === PLAYER) {
+        tooltipText = "<strong>Matchup:</strong> " + d.HTM + " vs. " + d.VTM + " on " + gameDate.toLocaleDateString() 
+        + "<br>" + "<strong>Shot type:</strong> " + d.ACTION_TYPE + ", " + d.SHOT_TYPE 
+        + "<br>" + "<strong>Shot Zone:</strong> " + d.SHOT_ZONE_AREA  
+        + "<br>" + "<strong>Distance:</strong> " + d.SHOT_DISTANCE + " ft."
+        + "<br>" + makeMiss;
+    }
+    else if(type === TEAM) {
+        tooltipText = "<strong>Player:</strong> " + d.PLAYER_NAME + " on " + gameDate.toLocaleDateString() 
+        + "<br>" + "<strong>Shot type:</strong> " + d.ACTION_TYPE + ", " + d.SHOT_TYPE 
+        + "<br>" + "<strong>Shot Zone:</strong> " + d.SHOT_ZONE_AREA  
+        + "<br>" + "<strong>Distance:</strong> " + d.SHOT_DISTANCE + " ft."
+        + "<br>" + makeMiss;
+    }
+    return tooltipText;
+}
+
+const renderShotLog = async (id, seasonOption, type) => {
+    clearInnerHTML("shot-chart-container");
+    let startSeason = parseInt(seasonOption.split("-")[0])
+    let endSeason = (startSeason + 1).toString();
+    seasonOption = startSeason.toString() + "-" + endSeason;
+    let shotRoot = {};
+    if(PLAYER_SHOTLOG === null) {
+        PLAYER_SHOTLOG = await readJsonData("./data/player_shotlog.json");
+        shotRoot = PLAYER_SHOTLOG;
+    }
+    let filename = "./data/team_shotlogs/shotlog_" + seasonOption + ".json"
+    try {
+        TEAM_SHOTLOG = await readJsonData(filename);
+    }
+    catch(err) {
+        TEAM_SHOTLOG = {};
+    }
+
+    if(type === PLAYER) {
+        shotRoot = PLAYER_SHOTLOG;
+    }
+    else if(type === TEAM) {
+        shotRoot = TEAM_SHOTLOG;
+    }
+    let shotData = [];
+    if(type === PLAYER) {
+        shotData = shotRoot[seasonOption] === undefined ? [] : shotRoot[seasonOption][id];    
+    }
+    else if(type === TEAM) {
+        shotData = shotRoot[id] === undefined ? [] : shotRoot[id];
+    }
+
+    // let shotPercentagesByZone = {};
+    // let totalShots = shotData.length;
+    // shotData.forEach((shot) => {
+    //     let zone = shot.SHOT_ZONE_AREA + ", " + shot.SHOT_TYPE 
+    //     if(shotPercentagesByZone[zone] === undefined) {
+    //         shotPercentagesByZone[zone] = 1;
+    //     }
+    //     else {
+    //         shotPercentagesByZone[zone] = shotPercentagesByZone[zone] + 1;
+    //     }
+    // });
+
+    let xMin = d3.min(shotData, (d) => {return parseInt(d.LOC_X)});
+    let xMax = d3.max(shotData, (d) => {return parseInt(d.LOC_X)});
+
+    let yMin = d3.min(shotData, (d) => {return parseInt(d.LOC_Y)});
+    let yMax = d3.max(shotData, (d) => {return parseInt(d.LOC_Y)});
+
+    let height = 500;
+    let width = 600;
+    
+    let xScale = d3.scaleLinear().domain([xMin, xMax]).range([0, width]);
+    let yScale = d3.scaleLinear().domain([yMin, yMax]).range([height, 0]);
+
+    let svg = d3.select("#shot-chart-container")
+        .append("svg")
+            .attr("width", width + MARGIN.left + MARGIN.right)
+            .attr("height", height + MARGIN.top + MARGIN.bottom)
+
+    // let g = svg.append("g")
+    //     .attr("transform", "translate(" + MARGIN.left + "," + MARGIN.top + ")");
+
+    drawBasketballCourt(svg, shotData, type);
 }
 
 const renderPlayerPlusMinus = async (playerId, seasonOption) => {
@@ -192,10 +325,33 @@ const renderPlayerPlusMinus = async (playerId, seasonOption) => {
             .x((d, index) => { return xScale(index)+4})
             .y((d) => {return yScale(d.PLUS_MINUS === null ? 0 : parseInt(d.PLUS_MINUS))})
         );
+
+    // Show start and end dates
+    let parentContainer = document.getElementById('plus-minus');
+
+    let row = document.createElement("div");
+    row.classList.add("row");
+
+    let startCol = document.createElement("div");
+    startCol.classList.add("col");
+    startCol.innerHTML = gameData[0].date;
+
+    let endCol = document.createElement("div");
+    endCol.classList.add("col");
+    endCol.style.textAlign = "right";
+    endCol.innerHTML = gameData[gameData.length-1].date;
+
+    row.appendChild(startCol);
+    row.appendChild(endCol);
+
+    parentContainer.appendChild(row);
 }
 
 const renderPlayerStats = async (playerId, seasonOption) => {
     clearInnerHTML("team-stats");
+
+    document.getElementById("game-lost").style.display = "none";
+    document.getElementById("game-won").style.display = "none";
 
     // Initialize tooltip
     var tooltip = d3.select("body").append("span")	
@@ -228,7 +384,7 @@ const renderPlayerStats = async (playerId, seasonOption) => {
         return game[VIZ_MODAL_BAR_VARIABLE];
     }); 
 
-    let height = 400;
+    let height = 200;
     let width = 1050;
     let xScale = d3.scaleBand().domain(xVals).range([0, width]).padding(0.3);
     let yScale = d3.scaleLinear().domain([0, d3.max(yVals)]).range([height, 0]);
@@ -244,7 +400,7 @@ const renderPlayerStats = async (playerId, seasonOption) => {
     svg.append("g")
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(xScale)
-            .tickFormat("")
+            .tickValues([gameData[0].date, gameData[gameData.length-1].date])
         )
         .selectAll(".tick text")
             .attr("font-size", "12");
@@ -280,7 +436,7 @@ const renderPlayerStats = async (playerId, seasonOption) => {
                 }
             })
             .attr("fill", (d) => {
-                return d.winLoss === 0 ? "#EC7063" : "#52BE80";
+                return "#F5B041";
             })
             .on("mouseover", (e, d, index) => {
                 let rectId = generateRectId(d);
@@ -346,10 +502,11 @@ const onClickListItem = (e, item, idKey, listItemType) => {
     if(item[idKey] === undefined) {
         return;
     }
+    stopTimeProgression();
     showVizModal(item[idKey], listItemType);
 }
 
-const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd) => {
+const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd, isStart) => {
     // Start loader 
     document.getElementById("section2-loader").style.display = "inline-block";
 
@@ -362,6 +519,12 @@ const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd) => {
     }
     if(TEAM_CONF_LOOKUP === null) {
         TEAM_CONF_LOOKUP = await readJsonData("./data/team_conf_lookup.json");
+    }
+    if(TEAM_STATS === null) {
+        TEAM_STATS = await readJsonData("./data/team_stats_details.json");
+    }
+    if(PLAYER_SHOTLOG === null) {
+        PLAYER_SHOTLOG = await readJsonData("./data/player_shotlog.json");
     }
 
     // Get best teams by standing
@@ -417,6 +580,32 @@ const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd) => {
 
     // Stop loader
     document.getElementById("section2-loader").style.display = "none";
+
+    if(isStart) {
+        let startStopBtn = document.getElementById("start-stop-progression");
+        startStopBtn.innerHTML = "⏸️ Pause";
+        startStopBtn.onclick = () => {
+            stopTimeProgression();
+        }
+        
+        TIME_SERIES_INTERVAL_F = setInterval(() => {
+            seasonStartNum = parseInt(SEASON_START);
+            seasonEndNum = parseInt(SEASON_END);
+            if(seasonStartNum >= 2020) {
+                SEASON_START = "1980";
+                SEASON_END = "1981";
+            } 
+            else {
+                // Increment by 1
+                SEASON_START = (seasonStartNum + 1).toString();
+                SEASON_END = (seasonEndNum + 1).toString();
+            }
+            let dropdownButton = document.getElementById("season-dropdown-button");
+            let seasonOption = SEASON_START + "-" + SEASON_END[2] + SEASON_END[3];
+            dropdownButton.innerHTML = seasonOption;
+            renderBestTeamsAndPlayers(SEASON_START, SEASON_END);
+        }, 5000);
+    }
 }
 
 const onSelectSeasonDropdown = (e, seasonOption, seasonStart, seasonEnd) => {
@@ -488,6 +677,9 @@ const renderVizModalVarDropdown = () => {
 const renderTeamStats = async (teamId, seasonOption) => {
     clearInnerHTML("team-stats");
 
+    document.getElementById("game-lost").style.display = "inline-block";
+    document.getElementById("game-won").style.display = "inline-block";
+
     // Initialize tooltip
     var tooltip = d3.select("body").append("span")	
         .attr("class", "tooltip")				
@@ -529,7 +721,7 @@ const renderTeamStats = async (teamId, seasonOption) => {
     svg.append("g")
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(xScale)
-            .tickFormat("")
+            .tickValues([gameData[0].date, gameData[gameData.length-1].date])
         )
         .selectAll(".tick text")
             .attr("font-size", "12");
@@ -714,4 +906,296 @@ const renderWinLossBarChart = async (teamId, seasonOption) => {
             .x((d, index) => { return xScale(index)+4})
             .y((d) => {return yScale(d)})
         );
+
+    // Show start and end dates
+    let parentContainer = document.getElementById('plus-minus');
+
+    let row = document.createElement("div");
+    row.classList.add("row");
+
+    let startCol = document.createElement("div");
+    startCol.classList.add("col");
+    startCol.innerHTML = gameData[0].date;
+
+    let endCol = document.createElement("div");
+    endCol.classList.add("col");
+    endCol.style.textAlign = "right";
+    endCol.innerHTML = gameData[gameData.length-1].date;
+
+    row.appendChild(startCol);
+    row.appendChild(endCol);
+
+    parentContainer.appendChild(row);
+}
+
+const drawBasketballCourt = (svg, shotData, type) => {
+    opts = {
+        // basketball hoop diameter (ft)
+        basketDiameter: 1.5,
+        // distance from baseline to backboard (ft)
+        basketProtrusionLength: 4,
+        // backboard width (ft)
+        basketWidth: 6,
+        // title of hexagon color legend
+        colorLegendTitle: 'Efficiency',
+        // label for starting of hexagon color range
+        colorLegendStartLabel: '< avg',
+        // label for ending of hexagon color range
+        colorLegendEndLabel: '> avg',
+        // full length of basketball court (ft)
+        courtLength: 94,
+        // full width of basketball court (ft)
+        courtWidth: 50,
+        // distance from baseline to free throw line (ft)
+        freeThrowLineLength: 19,
+        // radius of free throw line circle (ft)
+        freeThrowCircleRadius: 6,
+        // d3 scale for hexagon colors
+        heatScale: d3.scaleQuantize()
+          .domain([0, 1])
+          .range(['#5458A2', '#6689BB', '#FADC97', '#F08460', '#B02B48']),
+        // height of svg
+        height: 500,
+        // method of aggregating points into a bin
+        hexagonBin: function (point, bin) {
+          var attempts = point.attempts || 1;
+          var made = +point.made || 0;
+          bin.attempts = (bin.attempts || 0) + attempts;
+          bin.made = (bin.made || 0) + made;
+        },
+        // how many points does a bin need to be visualized
+        hexagonBinVisibleThreshold: 1,
+        // method to determine value to be used with specified heatScale
+        hexagonFillValue: function(d) {  return d.made/d.attempts; },
+        // bin size with regards to courth width/height (ft)
+        hexagonRadius: .75,
+        // discrete hexagon size values that radius value is mapped to
+        hexagonRadiusSizes: [0, .4, .6, .75],
+        // how many points in a bin to consider it while building radius scale
+        hexagonRadiusThreshold: 2,
+        // method to determine radius value to be used in radius scale
+        hexagonRadiusValue: function (d) { return d.attempts; },
+        // width of key marks (dashes on side of the paint) (ft)
+        keyMarkWidth: .5,
+        // width the key (paint) (ft)
+        keyWidth: 16,
+        // radius of restricted circle (ft)
+        restrictedCircleRadius: 4,
+        // title of hexagon size legend
+        sizeLegendTitle: 'Frequency',
+        // label of start of hexagon size legend
+        sizeLegendSmallLabel: 'low',
+        // label of end of hexagon size legend
+        sizeLegendLargeLabel: 'high',
+        // distance from baseline where three point line because circular (ft)
+        threePointCutoffLength: 14,
+        // distance of three point line from basket (ft)
+        threePointRadius: 23.75,
+        // distance of corner three point line from basket (ft)
+        threePointSideRadius: 22, 
+        // title of chart
+        title: 'Shot chart',
+        // method to determine x position of a bin on the court
+        translateX: function (d) { return d.x; },
+        // method to determine y position of a bin on the court
+        translateY: function (d) { return this._visibleCourtLength - d.y; },
+        // width of svg
+        width: 600
+    }
+    
+    var o = opts
+    
+    calculateVisibleCourtLength = function () {
+          var halfCourtLength = o.courtLength / 2;
+          var threePointLength = o.threePointRadius + 
+            o.basketProtrusionLength;
+          o.visibleCourtLength = threePointLength + 
+            (halfCourtLength - threePointLength) / 2;
+    }
+    
+    calculateVisibleCourtLength()
+    
+    // helper to create an arc path
+    appendArcPath = function (base, radius, startAngle, endAngle) {
+          var points = 30;
+    
+          var angle = d3.scaleLinear()
+              .domain([0, points - 1])
+              .range([startAngle, endAngle]);
+    
+          var line = d3.lineRadial()
+              .radius(radius)
+              .angle(function(d, i) { return angle(i); });
+    
+          return base.append("path").datum(d3.range(points))
+              .attr("d", line);
+    }
+    
+    // draw basketball court
+    var drawCourt = function () {
+          var base = svg.append("svg")
+                    .attr('width', o.width)
+                    .attr("height", o.height)
+                    .attr('viewBox', "0 0 " + o.courtWidth + " " + o.visibleCourtLength)
+            .append('g')
+              .attr('class', 'shot-chart-court');
+                           
+          base.append("rect")
+            .attr('class', 'shot-chart-court-key')
+            .attr("x", (o.courtWidth / 2 - o.keyWidth / 2))
+            .attr("y", (o.visibleCourtLength - o.freeThrowLineLength))
+            .attr("width", o.keyWidth)
+            .attr("height", o.freeThrowLineLength);
+    
+          base.append("line")
+            .attr('class', 'shot-chart-court-baseline')
+            .attr("x1", 0)
+            .attr("y1", o.visibleCourtLength)
+            .attr("x2", o.courtWidth)
+            .attr("y2", o.visibleCourtLength);
+                  
+          var tpAngle = Math.atan(o.threePointSideRadius / 
+            (o.threePointCutoffLength - o.basketProtrusionLength - o.basketDiameter/2));
+          appendArcPath(base, o.threePointRadius, -1 * tpAngle, tpAngle)
+            .attr('class', 'shot-chart-court-3pt-line')
+            .attr("transform", "translate(" + (o.courtWidth / 2) + ", " + 
+              (o.visibleCourtLength - o.basketProtrusionLength - o.basketDiameter / 2) + 
+              ")");
+             
+          [1, -1].forEach(function (n) {
+            base.append("line")
+              .attr('class', 'shot-chart-court-3pt-line')
+              .attr("x1", o.courtWidth / 2 + o.threePointSideRadius * n)
+              .attr("y1", o.visibleCourtLength - o.threePointCutoffLength)
+              .attr("x2", o.courtWidth / 2 + o.threePointSideRadius * n)
+              .attr("y2", o.visibleCourtLength);
+          });
+            
+          appendArcPath(base, o.restrictedCircleRadius, -1 * Math.PI/2, Math.PI/2)
+            .attr('class', 'shot-chart-court-restricted-area')
+            .attr("transform", "translate(" + (o.courtWidth / 2) + ", " + 
+              (o.visibleCourtLength - o.basketDiameter / 2 - o.basketProtrusionLength) + ")");
+                                                             
+          appendArcPath(base, o.freeThrowCircleRadius, -1 * Math.PI/2, Math.PI/2)
+            .attr('class', 'shot-chart-court-ft-circle-top')
+            .attr("transform", "translate(" + (o.courtWidth / 2) + ", " + 
+              (o.visibleCourtLength - o.freeThrowLineLength) + ")");
+                                                              
+          appendArcPath(base, o.freeThrowCircleRadius, Math.PI/2, 1.5 * Math.PI)
+            .attr('class', 'shot-chart-court-ft-circle-bottom')
+            .attr("transform", "translate(" + (o.courtWidth / 2) + ", " + 
+              (o.visibleCourtLength - o.freeThrowLineLength) + ")");
+    
+          [7, 8, 11, 14].forEach(function (mark) {
+            [1, -1].forEach(function (n) {
+              base.append("line")
+                .attr('class', 'shot-chart-court-key-mark')
+                .attr("x1", o.courtWidth / 2 + o.keyWidth / 2 * n + o.keyMarkWidth * n)
+                .attr("y1", o.visibleCourtLength - mark)
+                .attr("x2", o.courtWidth / 2 + o.keyWidth / 2 * n)
+                .attr("y2", o.visibleCourtLength - mark)
+            });
+          });    
+    
+          base.append("line")
+            .attr('class', 'shot-chart-court-backboard')
+            .attr("x1", o.courtWidth / 2 - o.basketWidth / 2)
+            .attr("y1", o.visibleCourtLength)
+            .attr("x2", o.courtWidth / 2 + o.basketWidth / 2)
+            .attr("y2", o.visibleCourtLength)
+                                         
+          base.append("circle")
+            .attr('class', 'shot-chart-court-hoop')
+            .attr("cx", o.courtWidth / 2)
+            .attr("cy", o.visibleCourtLength - o.basketDiameter / 2 - o.basketProtrusionLength)
+            .attr("r", o.basketDiameter / 2)
+    
+            console.log(o.visibleCourtLength);
+    
+            const scaleShotX = (x) => {
+              if(x > 0) {
+                return (x/10) + o.courtWidth/2;
+              }
+              else if(x < 0) {
+                x = Math.abs(x);
+                return o.courtWidth/2 - (x/10);
+              }
+              else {
+                return o.courtWidth/2;
+              }
+            }
+    
+            const scaleShotY = (y) => {
+                return o.visibleCourtLength - (Math.abs(y)/10) - (o.threePointRadius - o.freeThrowLineLength);
+            }
+    
+            const scaleRadius = (r) => {
+              return r/10;
+            }
+
+            // Initialize tooltip
+            var tooltip = d3.select("body").append("span")	
+                .attr("class", "tooltip")				
+                .style("opacity", 0);
+
+            shotData.forEach((d) => {
+                base.append("circle")
+                    .attr("cx", scaleShotX(d.LOC_X))
+                    .attr("cy", scaleShotY(d.LOC_Y))
+                    .attr("r", scaleRadius(4.5))
+                    .attr("fill", d.SHOT_MADE_FLAG === 0 ? "#EC7063" : "#52BE80")
+                    .on("mouseover", (e) => {
+                        let tooltipText = generateShotLogTooltip(d, type);
+                        tooltip.transition()		
+                            .duration(200)		
+                            .style("opacity", .9);		
+                        tooltip.html(tooltipText)	
+                            .style("padding", "8px")
+                            .style("left", (e.pageX) + "px")		
+                            .style("top", (e.pageY+15) + "px")
+                            .style("background-color", "#D6DBDF");
+                    })
+                    .on("mouseout", () => {		
+                        tooltip.transition()		
+                            .duration(500)	
+                            .style("opacity", 0);	
+                    });
+            });
+            
+    }
+    
+    drawCourt();
+}
+
+const renderTeamShotZoneChart = async (id, seasonOption, o) => {
+    clearInnerHTML("shot-chart-container");
+    if(TEAM_SHOTLOG === null) {
+        TEAM_SHOTLOG = await readJsonData("./data/team_shotlog.json");
+    }
+    let startSeason = parseInt(seasonOption.split("-")[0])
+    let endSeason = (startSeason + 1).toString();
+    seasonOption = startSeason.toString() + "-" + endSeason;
+    let shotData = TEAM_SHOTLOG[seasonOption] === undefined ? [] : TEAM_SHOTLOG[seasonOption][id];
+    console.log(shotData);
+
+    const courtMapping = {
+        "Center(C), 2PT Field Goal": {
+            x: (o.courtWidth/2 - 3), 
+            y: (o.threePointCutoffLength - (o.threePointRadius - o.freeThrowLineLength) + 3)
+        },
+        "Center(C), 3PT Field Goal": {
+            x: (o.courtWidth/2 - 3), 
+            y: (o.threePointCutoffLength - (o.threePointRadius - o.freeThrowLineLength) - 3)
+        },
+        "Left Side Center(LC), 2PT Field Goal": {x: 0, y: 0},
+        "Left Side Center(LC), 3PT Field Goal": {x: 0, y: 0},
+        "Left Side(L), 2PT Field Goal": {x: 0, y: 0},
+        "Left Side(L), 3PT Field Goal": {x: 0, y: 0},
+        "Right Side Center(RC), 2PT Field Goal": {x: 0, y: 0},
+        "Right Side Center(RC), 3PT Field Goal": {x: 0, y: 0},
+        "Right Side(R), 2PT Field Goal": {x: 0, y: 0},
+        "Right Side(R), 3PT Field Goal": {x: 0, y: 0}
+    }
+
+
 }

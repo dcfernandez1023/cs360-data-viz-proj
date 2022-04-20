@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <script src="https://d3js.org/d3.v3.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <title>Document</title>
+</head>
+<body>
+<style>
+    .shot-chart-court {
+        fill:transparent;
+        stroke:#333;
+        stroke-width:0.1
+    }
+    .shot-chart-court-ft-circle-bottom{
+        stroke-dasharray:1.5, 1
+    }
+    .shot-chart-court-hoop,.shot-chart-court-backboard{
+        z-index:100
+    }
+    .shot-chart-title{
+        font-size:15%;
+        text-transform:uppercase
+    }
+    .legend text{
+        font-size:4%
+    }    
+</style>
+
+<script>
+let svg = d3.select("body")
+    .append("svg")
+        .attr("width", 600)
+        .attr("height", 500);
+
+opts = {
+    // basketball hoop diameter (ft)
+    basketDiameter: 1.5,
+    // distance from baseline to backboard (ft)
+    basketProtrusionLength: 4,
+    // backboard width (ft)
+    basketWidth: 6,
+    // title of hexagon color legend
+    colorLegendTitle: 'Efficiency',
+    // label for starting of hexagon color range
+    colorLegendStartLabel: '< avg',
+    // label for ending of hexagon color range
+    colorLegendEndLabel: '> avg',
+    // full length of basketball court (ft)
+    courtLength: 94,
+    // full width of basketball court (ft)
+    courtWidth: 50,
+    // distance from baseline to free throw line (ft)
+    freeThrowLineLength: 19,
+    // radius of free throw line circle (ft)
+    freeThrowCircleRadius: 4,
+    // d3 scale for hexagon colors
+    heatScale: d3.scaleQuantize()
+      .domain([0, 1])
+      .range(['#5458A2', '#6689BB', '#FADC97', '#F08460', '#B02B48']),
+    // height of svg
+    height: 500,
+    // method of aggregating points into a bin
+    hexagonBin: function (point, bin) {
+      var attempts = point.attempts || 1;
+      var made = +point.made || 0;
+      bin.attempts = (bin.attempts || 0) + attempts;
+      bin.made = (bin.made || 0) + made;
+    },
+    // how many points does a bin need to be visualized
+    hexagonBinVisibleThreshold: 1,
+    // method to determine value to be used with specified heatScale
+    hexagonFillValue: function(d) {  return d.made/d.attempts; },
+    // bin size with regards to courth width/height (ft)
+    hexagonRadius: .75,
+    // discrete hexagon size values that radius value is mapped to
+    hexagonRadiusSizes: [0, .4, .6, .75],
+    // how many points in a bin to consider it while building radius scale
+    hexagonRadiusThreshold: 2,
+    // method to determine radius value to be used in radius scale
+    hexagonRadiusValue: function (d) { return d.attempts; },
+    // width of key marks (dashes on side of the paint) (ft)
+    keyMarkWidth: .5,
+    // width the key (paint) (ft)
+    keyWidth: 16,
+    // radius of restricted circle (ft)
+    restrictedCircleRadius: 4,
+    // title of hexagon size legend
+    sizeLegendTitle: 'Frequency',
+    // label of start of hexagon size legend
+    sizeLegendSmallLabel: 'low',
+    // label of end of hexagon size legend
+    sizeLegendLargeLabel: 'high',
+    // distance from baseline where three point line because circular (ft)
+    threePointCutoffLength: 14,
+    // distance of three point line from basket (ft)
+    threePointRadius: 23.75,
+    // distance of corner three point line from basket (ft)
+    threePointSideRadius: 22, 
+    // title of chart
+    title: 'Shot chart',
+    // method to determine x position of a bin on the court
+    translateX: function (d) { return d.x; },
+    // method to determine y position of a bin on the court
+    translateY: function (d) { return this._visibleCourtLength - d.y; },
+    // width of svg
+    width: 600
+}
+
+var o = opts
+
+calculateVisibleCourtLength = function () {
+      var halfCourtLength = o.courtLength / 2;
+      var threePointLength = o.threePointRadius + 
+        o.basketProtrusionLength;
+      o.visibleCourtLength = threePointLength + 
+        (halfCourtLength - threePointLength) / 2;
+}
+
+calculateVisibleCourtLength()
+
+// helper to create an arc path
+appendArcPath = function (base, radius, startAngle, endAngle) {
+      var points = 30;
+
+      var angle = d3.scaleLinear()
+          .domain([0, points - 1])
+          .range([startAngle, endAngle]);
+
+      var line = d3.lineRadial()
+        //   .interpolate("basis")
+        //   .tension(0)
+          .radius(radius)
+          .angle(function(d, i) { return angle(i); });
+
+      return base.append("path").datum(d3.range(points))
+          .attr("d", line);
+}
+
+// draw basketball court
+var drawCourt = function () {
+
+      var base = svg.append("svg")
+                .attr('width', 600)
+                .attr('viewBox', "0 0 " + o.courtWidth + " " + o.visibleCourtLength)
+        .append('g')
+          .attr('class', 'shot-chart-court');
+                       
+      base.append("rect")
+        .attr('class', 'shot-chart-court-key')
+        .attr("x", (o.courtWidth / 2 - o.keyWidth / 2))
+        .attr("y", (o.visibleCourtLength - o.freeThrowLineLength))
+        .attr("width", o.keyWidth)
+        .attr("height", o.freeThrowLineLength);
+
+      console.log(o.courtWidth / 2 - o.keyWidth / 2);
+
+      let centerThreeX = o.courtWidth/2 - 3;
+      let centerThreeY = o.threePointCutoffLength - (o.threePointRadius - o.freeThrowLineLength) - 3;
+      console.log(centerThreeX + ", " + centerThreeY);
+ 
+      let leftThreeX = (o.courtWidth/2) - centerThreeX - 4;
+      let leftThreeY = centerThreeY + 18;
+
+      let rightThreeX = (o.courtWidth/2) + centerThreeX - 2;
+      let rightThreeY = centerThreeY + 18;
+
+      let leftMidrangeX = 0;
+      let leftMidrangeY = 0;
+
+      let rightMidrangeX = 0;
+      let rightMidrangeY = 0;
+
+  
+      
+      base
+          .append("text")
+            .attr("x", centerThreeX)
+            .attr("y", centerThreeY)
+            .attr("font-size", 1)
+            .attr("font-weight", 0)
+            .attr("fill", "black")
+            .html("10 / 20 (50%)")
+      base
+          .append("text")
+            .attr("x", leftThreeX)
+            .attr("y", leftThreeY)
+            .attr("font-size", 1)
+            .attr("font-weight", 0)
+            .attr("fill", "black")
+            .text("10 / 20 (50%)")
+      base
+          .append("text")
+            .attr("x", rightThreeX)
+            .attr("y", rightThreeY)
+            .attr("font-size", 1)
+            .attr("font-weight", 0)
+            .attr("fill", "black")
+            .text("10 / 20 (50%)")
+
+      base.append("line")
+        .attr('class', 'shot-chart-court-baseline')
+        .attr("x1", 0)
+        .attr("y1", o.visibleCourtLength)
+        .attr("x2", o.courtWidth)
+        .attr("y2", o.visibleCourtLength);
+              
+      var tpAngle = Math.atan(o.threePointSideRadius / 
+        (o.threePointCutoffLength - o.basketProtrusionLength - o.basketDiameter/2));
+      appendArcPath(base, o.threePointRadius, -1 * tpAngle, tpAngle)
+        .attr('class', 'shot-chart-court-3pt-line')
+        .attr("transform", "translate(" + (o.courtWidth / 2) + ", " + 
+          (o.visibleCourtLength - o.basketProtrusionLength - o.basketDiameter / 2) + 
+          ")");
+         
+      [1, -1].forEach(function (n) {
+        base.append("line")
+          .attr('class', 'shot-chart-court-3pt-line')
+          .attr("x1", o.courtWidth / 2 + o.threePointSideRadius * n)
+          .attr("y1", o.visibleCourtLength - o.threePointCutoffLength)
+          .attr("x2", o.courtWidth / 2 + o.threePointSideRadius * n)
+          .attr("y2", o.visibleCourtLength);
+      });
+        
+      appendArcPath(base, o.restrictedCircleRadius, -1 * Math.PI/2, Math.PI/2)
+        .attr('class', 'shot-chart-court-restricted-area')
+        .attr("transform", "translate(" + (o.courtWidth / 2) + ", " + 
+          (o.visibleCourtLength - o.basketDiameter / 2 - o.basketProtrusionLength) + ")");
+                                                         
+      appendArcPath(base, o.freeThrowCircleRadius, -1 * Math.PI/2, Math.PI/2)
+        .attr('class', 'shot-chart-court-ft-circle-top')
+        .attr("transform", "translate(" + (o.courtWidth / 2) + ", " + 
+          (o.visibleCourtLength - o.freeThrowLineLength) + ")");
+                                                          
+      appendArcPath(base, o.freeThrowCircleRadius, Math.PI/2, 1.5 * Math.PI)
+        .attr('class', 'shot-chart-court-ft-circle-bottom')
+        .attr("transform", "translate(" + (o.courtWidth / 2) + ", " + 
+          (o.visibleCourtLength - o.freeThrowLineLength) + ")");
+
+      [7, 8, 11, 14].forEach(function (mark) {
+        [1, -1].forEach(function (n) {
+          base.append("line")
+            .attr('class', 'shot-chart-court-key-mark')
+            .attr("x1", o.courtWidth / 2 + o.keyWidth / 2 * n + o.keyMarkWidth * n)
+            .attr("y1", o.visibleCourtLength - mark)
+            .attr("x2", o.courtWidth / 2 + o.keyWidth / 2 * n)
+            .attr("y2", o.visibleCourtLength - mark)
+        });
+      });    
+
+      base.append("line")
+        .attr('class', 'shot-chart-court-backboard')
+        .attr("x1", o.courtWidth / 2 - o.basketWidth / 2)
+        .attr("y1", o.visibleCourtLength)
+        .attr("x2", o.courtWidth / 2 + o.basketWidth / 2)
+        .attr("y2", o.visibleCourtLength)
+                                     
+      base.append("circle")
+        .attr('class', 'shot-chart-court-hoop')
+        .attr("cx", o.courtWidth / 2)
+        .attr("cy", o.visibleCourtLength - o.basketDiameter / 2 - o.basketProtrusionLength)
+        .attr("r", o.basketDiameter / 2)
+
+        console.log(o.visibleCourtLength);
+
+        const scaleShotX = (x) => {
+          if(x > 0) {
+            return (x/10) + o.courtWidth/2;
+          }
+          else if(x < 0) {
+            x = Math.abs(x);
+            return o.courtWidth/2 - (x/10);
+          }
+          else {
+            return o.courtWidth/2;
+          }
+        }
+
+        const scaleShotY = (y) => {
+          return o.visibleCourtLength - (Math.abs(y)/10) - (o.threePointRadius - o.freeThrowLineLength);
+        }
+
+        const scaleRadius = (r) => {
+          return r/10;
+        }
+
+        // // neg x, pos y
+        // base.append("circle")
+        //     .attr("cx", scaleShotX(-152))
+        //     .attr("cy", scaleShotY(325))
+        //     .attr("r", scaleRadius(4))
+        //     .attr("fill", "red");
+        // // neg x, pos y
+        // base.append("circle")
+        //     .attr("cx", scaleShotX(-96))
+        //     .attr("cy", scaleShotY(14))
+        //     .attr("r", scaleRadius(4))
+        //     .attr("fill", "red");
+
+        //   // pos x, pos y
+        //   base.append("circle")
+        //     .attr("cx", scaleShotX(231))
+        //     .attr("cy", scaleShotY(183))
+        //     .attr("r", scaleRadius(4))
+        //     .attr("fill", "red");
+
+        //   // neg x, neg y - should be left baseline 3pt
+        //   base.append("circle")
+        //     .attr("cx", scaleShotX(-233))
+        //     .attr("cy", scaleShotY(-20))
+        //     .attr("r", scaleRadius(4))
+        //     .attr("fill", "red");
+
+        //   // pos x, neg y - should be right corner 3pt
+        //   base.append("circle")
+        //     .attr("cx", scaleShotX(237))
+        //     .attr("cy", scaleShotY(-14))
+        //     .attr("r", scaleRadius(4))
+        //     .attr("fill", "red");
+
+        //     base.append("circle")
+        //     .attr("cx", scaleShotX(-97))
+        //     .attr("cy", scaleShotY(218))
+        //     .attr("r", scaleRadius(4))
+        //     .attr("fill", "red");
+}
+
+drawCourt();
+
+</script>
+
+</body>
+</html>

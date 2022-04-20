@@ -18,6 +18,27 @@
 </head>
 <body class="default-background">
 
+  <style>
+    .shot-chart-court {
+        fill:transparent;
+        stroke:#333;
+        stroke-width:0.1
+    }
+    .shot-chart-court-ft-circle-bottom{
+        stroke-dasharray:1.5, 1
+    }
+    .shot-chart-court-hoop,.shot-chart-court-backboard{
+        z-index:100
+    }
+    .shot-chart-title{
+        font-size:15%;
+        text-transform:uppercase
+    }
+    .legend text{
+        font-size:4%
+    }    
+</style>
+
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light default-background">
     <div class="container">
@@ -127,6 +148,22 @@
       </div>
     </div>
 
+    <div class="row center-align">
+      <div class="col">
+        <button id="start-stop-progression" class="btn btn-success" style="display: none;"></button>
+      </div>
+    </div>
+
+    <br>
+
+    <div class="row center-align">
+      <div class="col-md-4"></div>
+      <div class="col-md-4">
+        <i>Hit the button above to start/stop the time progression. Click on any of the teams or players below to dive deeper into the stats.</i>
+      </div>
+      <div class="col-md-4"></div>
+    </div>
+
     <br>
     
     <div class="row">
@@ -164,6 +201,14 @@
       <div class="col">
         <h2>Compare Statistical Averages Throughout the Years</h2>
         <br>
+        <div class="row">
+          <div class="col-md-4"></div>
+          <div class="col-md-4">
+            <i>Select stats from the dropdown to be graphed and use the slider below the graph to change the time range.</i>
+          </div>
+          <div class="col-md-4"></div>
+        </div>
+        <br>
         <div id="stat-season-avgs">
           <span class="dropdown">
             <button id="statavg-dropdown-button" class="btn btn-light dropdown-toggle season-dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -184,7 +229,7 @@
     </div>
     <br>
     <br>
-    <div class="row">
+    <div id="slider-container" class="row" style="display: none;">
       <div class="col">
         <input type="text" id="slider" class="slider">
       </div>
@@ -204,26 +249,65 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div id="viz-modal-body" class="modal-body">
-          <div class="row">
-            <div id ="section2-left-viz-col" class="col-lg-7">
-              <h5 id="diverging-line-title"></h5>
-              <div id="plus-minus"></div>
+          <ul class="nav nav-tabs" id="vizTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="stat-tab" data-bs-toggle="tab" data-bs-target="#stat-chart" type="button" role="tab" aria-controls="stat-tab" aria-selected="true">Stats</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="shot-tab" data-bs-toggle="tab" data-bs-target="#shot-chart" type="button" role="tab" aria-controls="shot-tab" aria-selected="false">Shot Chart</button>
+            </li>
+          </ul>
+          <div class="tab-content" id="vizTabContent">
+            <div class="tab-pane fade show active" id="stat-chart" role="tabpanel" aria-labelledby="stat-tab">
               <br>
-              <div>
-                <span id="viz-modal-pergame">
-                  <span class="dropdown">
-                    <button id="variable-dropdown-button" class="btn btn-light dropdown-toggle season-dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                      
-                    </button>
-                    <ul id="variable-dropdown-menu" class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                    </ul>
-                  </span>
-                </span> 
+              <div class="row">
+                <div class="col">
+                  <h5 id="diverging-line-title"></h5>
+                  <div id="plus-minus">
+
+                  </div>
+                </div>
               </div>
-              <div id="team-stats">
+              <hr>
+              <div class="row">
+                <div class="col">
+                  <div class="row">
+                    <div class="col">
+                      <h5>Stats per Game</h5>
+                    </div>
+                    <div class="col" style="text-align: right;">
+                      <span id="viz-modal-pergame">
+                        <span class="dropdown">
+                          <button id="variable-dropdown-button" class="btn btn-light dropdown-toggle season-dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            
+                          </button>
+                          <ul id="variable-dropdown-menu" class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                          </ul>
+                        </span>
+                      </span> 
+                    </div>
+                  </div>
+                  <div>
+                    <span id="game-lost" class="badge rounded-pill" style="background-color: #EC7063">Game Lost</span>
+                    <span id="game-won" class="badge rounded-pill" style="background-color: #52BE80">Game Won</span>
+                  </div>
+                  <div id="team-stats">
+
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="col-lg-6"></div>
+            <div class="tab-pane fade" id="shot-chart" role="tabpanel" aria-labelledby="shot-tab">
+              <br>
+              <div class="row">
+                <div class="col">
+                  <h5>Shot Chart</h5>
+                  <div id="shot-chart-container" class="center-align">
+
+                  </div>
+                </div>          
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -234,13 +318,18 @@
   </div>
 
   <script>
-    // Section 2 
-    renderBestTeamsAndPlayers("1980", "1981");
-    renderSeasonDropdownOptions();
-
-    // Section 3 
-    renderAvgStats();
-    renderGraphSlider();
+    loadVizData(() => {
+      document.getElementById("start-stop-progression").style.display = "inline-block";
+      document.getElementById("slider-container").style.display = "block";
+      // Section 2 
+      renderBestTeamsAndPlayers("1980", "1981", true);
+      renderSeasonDropdownOptions();
+      // Section 3 
+      renderAvgStats();
+      renderGraphSlider();
+    }, (err) => {
+      alert(err.message);
+    });
   </script>
 
 </body>

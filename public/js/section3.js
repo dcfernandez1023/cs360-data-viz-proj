@@ -10,6 +10,16 @@ var SELECTABLE_STATS = [
     {value: "BLK", display: "Blocks", color: "#717D7E"}
 ];
 
+var SEC_3_MARGIN = {
+    left: 75,
+    right: 30,
+    top: 30,
+    bottom: 30
+}
+
+var SEASON_START_SEC_3 = "1980";
+var SEASON_END_SEC_3 = "1981";
+
 var STAT_COLORS = {
     "3P": "#E74C3C",
     "PTS": "#9B59B6",
@@ -70,7 +80,6 @@ const renderStatSelectDropdown = () => {
 }
 
 const onChangeGraphSlider = (vals) => {
-    console.log(vals);
     let valArr = vals.split(",");
     let start = parseInt(valArr[0]);
     let end = parseInt(valArr[1]);
@@ -87,7 +96,7 @@ const parseYearsFromSeason = (season) => {
 }
 
 const renderGraphSlider = () => {
-    let seasonStart = parseInt(SEASON_START);
+    let seasonStart = parseInt(SEASON_START_SEC_3);
     let seasonEnd = 2021;
     let seasons = [];
     let start = seasonStart;
@@ -121,11 +130,11 @@ const renderAvgStats = async (startYear, endYear) => {
     let svg = d3.select("#section-3-viz")
         .append("svg")
             .attr("id", "section-3-svg")
-            .attr("width", width + MARGIN.left + MARGIN.right)
-            .attr("height", height + MARGIN.top + MARGIN.bottom)
+            .attr("width", width + SEC_3_MARGIN.left + SEC_3_MARGIN.right)
+            .attr("height", height + SEC_3_MARGIN.top + SEC_3_MARGIN.bottom)
             .style("background-color", "white")
         .append("g")
-            .attr("transform", "translate(" + MARGIN.left + "," + MARGIN.top + ")");
+            .attr("transform", "translate(" + SEC_3_MARGIN.left + "," + SEC_3_MARGIN.top + ")");
 
     let filteredAvgs = [];
     for(var i = 0; i < SEASON_AVGS.length; i++) {
@@ -142,8 +151,6 @@ const renderAvgStats = async (startYear, endYear) => {
             }
         }
     }
-
-    console.log(filteredAvgs);
 
     // Render x-axis 
     let xVals = filteredAvgs.map((data) => {
@@ -190,6 +197,13 @@ const renderAvgStats = async (startYear, endYear) => {
             .tickPadding(10)
         ).selectAll(".tick text")
             .attr("font-size", "12");
+    svg.append("text")
+        .attr("text-anchor", "end")
+        .attr("transform", "rotate(-90)")
+        .attr("x", 0)
+        .attr("y", -SEC_3_MARGIN.left + 25)
+        .attr("font-weight", "bold")
+        .text("Avg. Stat Amount per Game");
     selectedStats.forEach((stat, index) => {
         // Draw lines
         svg.append("path")
@@ -210,7 +224,6 @@ const renderAvgStats = async (startYear, endYear) => {
                 .attr("r", 5)
                 .attr("fill", STAT_COLORS[stat])
                 .on("mouseover", (e, d) => {
-                    console.log("mouseover");
                     let circleId = generateCircleId(seasonAvg, stat);
                     d3.select("#" + circleId)
                         .style("stroke", "black");
@@ -224,7 +237,6 @@ const renderAvgStats = async (startYear, endYear) => {
                         .style("background-color", "#D6DBDF");
                     })
                 .on("mouseout", (e, d) => {	
-                    console.log("mouseout");
                     let circleId = generateCircleId(seasonAvg, stat);
                     d3.select("#" + circleId)
                         .style("stroke", "none");

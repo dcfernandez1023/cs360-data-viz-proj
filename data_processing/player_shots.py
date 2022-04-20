@@ -7,10 +7,9 @@ from nba_api.stats.static.players import players, get_players
 from pprint import pprint
 import csv
 
-# shot_data = shotchartdetail.ShotChartDetail(1610612744, 0, season_nullable="2015-16").get_dict()
-# # pprint(shot_data)
+# shot_data = shotchartdetail.ShotChartDetail(1610612744, 201939, season_nullable="2015-16", context_measure_simple='FGA').get_dict()
 # print("Result Sets Length: " + str(len(shot_data.get("resultSets"))))
-# print(shot_data.get("resultSets")[0].get("headers"))
+# pprint(shot_data)
 # exit(0)
 
 START_SEASON = 1980
@@ -79,7 +78,12 @@ with open("./data/player_stats.csv", "r", encoding="utf-8") as csv_f:
                     team_abbr = row[team_index]
                     team_data = find_team_by_abbreviation(team_abbr) 
                     team_id = team_data.get("id") if team_data is not None else find_team_by_abbreviation(team_not_found_lookup.get(team_abbr)).get("id")
-                    playershot_data = shotchartdetail.ShotChartDetail(team_id, player_id, season_nullable=parse_season(season)).get_dict()
+                    playershot_data = shotchartdetail.ShotChartDetail(
+                        team_id, 
+                        player_id, 
+                        season_nullable=parse_season(season),
+                        context_measure_simple='FGA'
+                    ).get_dict()
                     rowset_headers = playershot_data.get("resultSets")[0].get("headers")
                     rowset = playershot_data.get("resultSets")[0].get("rowSet")
                     for d in rowset:
