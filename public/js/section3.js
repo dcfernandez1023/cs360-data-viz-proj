@@ -33,6 +33,16 @@ var STAT_COLORS = {
     "BLK": "#717D7E"
 };
 
+var STAT_TITLES = {
+    "3P": "3-Point Makes",
+    "PTS": "Points",
+    "STL": "Steals",
+    "TRB": "Rebounds",
+    "TOV": "Turnovers",
+    "AST": "Assists",
+    "BLK": "Blocks"
+};
+
 const generateCircleId = (d, stat) => {
     return "section3-" + stat + "-" + d.Season;
 }
@@ -173,7 +183,6 @@ const renderSmallMultiples = async (startYear, endYear) => {
         col.style.marginBottom = "12px";
         row.appendChild(col);
         let width = col.clientWidth - (SEC_3_MARGIN.left + SEC_3_MARGIN.right) - 15;
-        console.log(width);
 
         let svg = d3.select("#" + colId)
             .append("svg")
@@ -219,13 +228,20 @@ const renderSmallMultiples = async (startYear, endYear) => {
             ).selectAll(".tick text")
                 .attr("font-size", "12");
         svg.append("text")
-            .attr("text-anchor", "end")
-            .attr("transform", "rotate(-90)")
+            .attr("text-anchor", "middle")
             .attr("x", 0)
-            .attr("y", -SEC_3_MARGIN.left + 25)
+            .attr("y", -10)
             .attr("font-size", 14)
             .attr("font-weight", "bold")
-            .text("Avg. Stat Amount per Game");
+            .attr("fill", STAT_COLORS[stat])
+            .text(STAT_TITLES[stat]);
+        svg.append("text")
+            .attr("text-anchor", "end")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -(height/2) + SEC_3_MARGIN.bottom)
+            .attr("y", -SEC_3_MARGIN.left + 25)
+            .attr("font-size", 11)
+            .text("Avg. Stat Amount per Season");
 
         // Draw lines
         svg.append("path")
@@ -357,10 +373,9 @@ const renderAvgStats = async (startYear, endYear) => {
     svg.append("text")
         .attr("text-anchor", "end")
         .attr("transform", "rotate(-90)")
-        .attr("x", 0)
+        .attr("x", -(height/2) + SEC_3_MARGIN.bottom)
         .attr("y", -SEC_3_MARGIN.left + 25)
-        .attr("font-weight", "bold")
-        .text("Avg. Stat Amount per Game");
+        .text("Avg. Stat Amount per Season");
 
     selectedStats.forEach((stat, index) => {
         // Draw lines
