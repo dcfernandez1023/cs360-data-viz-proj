@@ -583,7 +583,7 @@ const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd, isStart) => {
 
     if(isStart) {
         let startStopBtn = document.getElementById("start-stop-progression");
-        startStopBtn.innerHTML = "⏸️ Pause";
+        startStopBtn.innerHTML = '⏸️ Pause <span style="margin-left: 3px;" class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> <span class="visually-hidden">Loading...</span>';
         startStopBtn.onclick = () => {
             stopTimeProgression();
         }
@@ -604,13 +604,14 @@ const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd, isStart) => {
             let seasonOption = SEASON_START + "-" + SEASON_END[2] + SEASON_END[3];
             dropdownButton.innerHTML = seasonOption;
             renderBestTeamsAndPlayers(SEASON_START, SEASON_END);
-        }, 5000);
+        }, 2500);
     }
 }
 
 const onSelectSeasonDropdown = (e, seasonOption, seasonStart, seasonEnd) => {
     let dropdownButton = document.getElementById("season-dropdown-button");
     dropdownButton.innerHTML = seasonOption;
+    stopTimeProgression();
     renderBestTeamsAndPlayers(seasonStart, seasonEnd);
     SEASON_START = seasonStart;
     SEASON_END = seasonEnd;
@@ -620,6 +621,12 @@ const renderSeasonDropdownOptions = () => {
     let startYear = 1980;
     let endYear = 2020;
     let dropdownMenu = document.getElementById("season-dropdown-menu");
+    dropdownMenu.style.width = "450px";
+    let row = document.createElement("div");
+    let col = document.createElement("div");
+    row.classList.add("row");
+    col.classList.add("col-md-3");
+    let itemCount = 0;
     while(startYear <= endYear) {
         let startYearStr = startYear.toString();
         let endYearStr = (startYear+1).toString();
@@ -631,10 +638,20 @@ const renderSeasonDropdownOptions = () => {
         dropdownLink.innerHTML = seasonOption;
         dropdownItem.onclick = (e) => {onSelectSeasonDropdown(e, seasonOption, startYearStr, endYearStr)};
         dropdownItem.appendChild(dropdownLink);
-        dropdownMenu.appendChild(dropdownItem);
+        col.appendChild(dropdownItem);
+        itemCount++;
+        if(itemCount >= 12) {
+            row.appendChild(col);
+            col = document.createElement("div");
+            col.classList.add("col-md-3");
+            itemCount = 0;
+        }
+        // dropdownMenu.appendChild(dropdownItem);
 
         startYear++;
     }
+    row.appendChild(col);
+    dropdownMenu.appendChild(row);
 }
 
 const onSelectVizModalVarDropdown = (selectedVar, display) => {
@@ -1110,8 +1127,6 @@ const drawBasketballCourt = (svg, shotData, type) => {
             .attr("cy", o.visibleCourtLength - o.basketDiameter / 2 - o.basketProtrusionLength)
             .attr("r", o.basketDiameter / 2)
     
-            console.log(o.visibleCourtLength);
-    
             const scaleShotX = (x) => {
               if(x > 0) {
                 return (x/10) + o.courtWidth/2;
@@ -1176,7 +1191,6 @@ const renderTeamShotZoneChart = async (id, seasonOption, o) => {
     let endSeason = (startSeason + 1).toString();
     seasonOption = startSeason.toString() + "-" + endSeason;
     let shotData = TEAM_SHOTLOG[seasonOption] === undefined ? [] : TEAM_SHOTLOG[seasonOption][id];
-    console.log(shotData);
 
     const courtMapping = {
         "Center(C), 2PT Field Goal": {
