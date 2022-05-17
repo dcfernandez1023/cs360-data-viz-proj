@@ -109,15 +109,15 @@ with open("./data/teams.csv", "r", encoding="utf-8") as csv_f:
             with open(file_name, "w", encoding="utf-8") as json_f:
                 # print("Writing shot log for " + season + " to " + file_name)
                 json.dump(season_shotlog, json_f)
-        with open("./team_shotlog.json", "w", encoding="utf-8") as json_f:
-            json.dump(data, json_f)
-        with open("./team_all_shots.json", "w", encoding="utf-8") as json_f2:
-            json.dump(shots, json_f2)
+        # with open("./team_shotlog.json", "w", encoding="utf-8") as json_f:
+        #     json.dump(data, json_f)
+        # with open("./team_all_shots.json", "w", encoding="utf-8") as json_f2:
+        #     json.dump(shots, json_f2)
     except Exception as e:
-        with open("./team_shotlog.json", "w", encoding="utf-8") as json_f:
-            json.dump(data, json_f)
-        with open("./team_all_shots.json", "w", encoding="utf-8") as json_f2:
-            json.dump(shots, json_f2)
+        # with open("./team_shotlog.json", "w", encoding="utf-8") as json_f:
+        #     json.dump(data, json_f)
+        # with open("./team_all_shots.json", "w", encoding="utf-8") as json_f2:
+        #     json.dump(shots, json_f2)
         raise(e)
     
 

@@ -1,3 +1,4 @@
+// GLOBALS 
 var SEASON_AVGS = null;
 var SELECTED_STATS = {"3P": true};
 var SELECTABLE_STATS = [
@@ -43,20 +44,24 @@ var STAT_TITLES = {
     "BLK": "Blocks"
 };
 
+// Helper function to generate an id for the circles on the multi-series line chart / small multiples charts 
 const generateCircleId = (d, stat) => {
     return "section3-" + stat + "-" + d.Season;
 }
 
+// Toggles when the user selects the small multiple switch
 const onChangeSmallMultipleSwitch = () => {
     IS_SMALL_MULTIPLES = !IS_SMALL_MULTIPLES;
     renderSeasonAvgs(SEASON_START_SEC_3, SEASON_END_SEC_3);
 }
 
+// Toggles when the user selects the start y-axis from 0 switch
 const onChangeStartZeroSwitch = () => {
     IS_START_ZERO = !IS_START_ZERO;
     renderSeasonAvgs(SEASON_START_SEC_3, SEASON_END_SEC_3);
 }
 
+// Selects or de-selects a stat 
 const onSelectStat = (e, stat, display, index) => {
     e.stopPropagation();
     if(SELECTED_STATS[stat]) {
@@ -83,6 +88,7 @@ const onSelectStat = (e, stat, display, index) => {
     renderSeasonAvgs(SEASON_START_SEC_3,SEASON_END_SEC_3);
 }
 
+// Renders the stat select dropdown for the user to select or de-select stats
 const renderStatSelectDropdown = () => {
     let dropdownMenu = document.getElementById("statavg-dropdown-menu");
 
@@ -102,6 +108,7 @@ const renderStatSelectDropdown = () => {
     });
 }
 
+// Function fired when user changes the start season and end season using the slider. Re-renders the visualization 
 const onChangeGraphSlider = (vals) => {
     let valArr = vals.split(",");
     let start = parseInt(valArr[0]);
@@ -114,12 +121,14 @@ const onChangeGraphSlider = (vals) => {
     renderSeasonAvgs(start, end);
 }
 
+// Helper function to get the start year and end year from a season string (i.e. "1980-81")
 const parseYearsFromSeason = (season) => {
     let valArr = season.split("-");
     let start = parseInt(valArr[0]);
     return [start, start+1];
 }
 
+// Renders the slider bar onto the website
 const renderGraphSlider = () => {
     let seasonStart = parseInt(SEASON_START_SEC_3);
     let seasonEnd = 2021;
@@ -141,6 +150,7 @@ const renderGraphSlider = () => {
     });
 }
 
+// Renders the small multiples line chart 
 const renderSmallMultiples = async (startYear, endYear) => {
     renderStatSelectDropdown();
 
@@ -287,6 +297,7 @@ const renderSmallMultiples = async (startYear, endYear) => {
     });
 }
 
+// Renders the multi-series line chart
 const renderAvgStats = async (startYear, endYear) => {
     renderStatSelectDropdown();
 
@@ -421,6 +432,7 @@ const renderAvgStats = async (startYear, endYear) => {
     });
 }
 
+// Wraps the renderAvgStats() and renderSmallMultiples() into a single function that can be called
 const renderSeasonAvgs = async (startYear, endYear) => {
     // Clear innerHTML to reset on every render
     document.getElementById("section-3-viz").innerHTML = "";

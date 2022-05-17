@@ -1,3 +1,4 @@
+# Use this file to get player stat data for each season
 import time
 from nba_api.stats.endpoints import commonplayerinfo, teamyearbyyearstats, teamgamelog, playerprofilev2, leagueleaders
 from nba_api.stats.static.teams import teams

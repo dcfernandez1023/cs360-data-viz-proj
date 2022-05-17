@@ -1,3 +1,4 @@
+# Use this file to get player game by game data for each season
 import json
 import time
 from nba_api.stats.endpoints import playergamelog
@@ -76,9 +77,9 @@ with open("./data/player_stats.csv", "r", encoding="utf-8") as csv_f:
                     time.sleep(1)
                 else:
                     break
-        with open("./player_gamelog.json", "w", encoding="utf-8") as json_f:
+        with open("./data/player_gamelog.json", "w", encoding="utf-8") as json_f:
             json.dump(data, json_f)
     except Exception as e:
-        with open("./player_gamelog.json", "w", encoding="utf-8") as json_f:
+        with open("./data/player_gamelog.json", "w", encoding="utf-8") as json_f:
             json.dump(data, json_f)        
             raise(e)

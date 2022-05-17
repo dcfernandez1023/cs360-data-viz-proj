@@ -1,3 +1,4 @@
+# Use this file to get a team conference lookup by team id
 from nba_api.stats.endpoints import commonplayerinfo, teamyearbyyearstats, teamgamelog, teaminfocommon
 from nba_api.stats.static.teams import teams
 from pprint import pprint

@@ -1,3 +1,4 @@
+# Use this file to get common team data
 from nba_api.stats.endpoints import commonplayerinfo, teamyearbyyearstats, teamgamelog
 from nba_api.stats.static.teams import teams
 from pprint import pprint

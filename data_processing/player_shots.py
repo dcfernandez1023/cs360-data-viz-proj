@@ -1,4 +1,4 @@
-# use ShotChartDetail class to obtain
+# use ShotChartDetail class to obtain player shot chart data for each season
 import json
 import time
 from nba_api.stats.endpoints import shotchartdetail
@@ -98,9 +98,9 @@ with open("./data/player_stats.csv", "r", encoding="utf-8") as csv_f:
                     # exit(0)
                 else:
                     break
-        with open("./player_shotlog.json", "w", encoding="utf-8") as json_f:
+        with open("./data/player_shotlog.json", "w", encoding="utf-8") as json_f:
             json.dump(data, json_f)
     except Exception as e:
-        with open("./player_shotlog.json", "w", encoding="utf-8") as json_f:
+        with open("./data/player_shotlog.json", "w", encoding="utf-8") as json_f:
             json.dump(data, json_f)
             raise(e)        

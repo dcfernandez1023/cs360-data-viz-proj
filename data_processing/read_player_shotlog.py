@@ -1,3 +1,4 @@
+# Use this file to test reading the player_shotlog.json file
 import json
 from pprint import pprint
 

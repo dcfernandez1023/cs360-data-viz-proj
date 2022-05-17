@@ -1,3 +1,4 @@
+# Use this file to get team stat details for each game of a team in each season
 import time
 from nba_api.stats.endpoints import teamgamelog
 from pprint import pprint

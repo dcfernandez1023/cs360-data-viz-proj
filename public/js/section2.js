@@ -1,3 +1,4 @@
+// Globals holding the data read from the server to avoid re-reading twice
 var BEST_TEAMS = null;
 var BEST_PLAYERS = null;
 var TEAM_CONF_LOOKUP = null;
@@ -61,24 +62,22 @@ const stopTimeProgression = () => {
     }
 }
 
-/**
- * 
- * @param {*} csvSrc - path/url to CSV file
- * @param {*} callback - callback func upon successful reading of csv 
- * @param {*} onErr - callback func on error reading csv 
- */
+// Helper function to read CSV 
  const readCsvData = async (csvSrc) => {
     return d3.csv(csvSrc);
 }
 
+// Helper function to read JSON
 const readJsonData = async (jsonSrc) => {
     return d3.json(jsonSrc);
 }
 
+// Helper function to clear children of an HTML element
 const clearInnerHTML = (elemId) => {
     document.getElementById(elemId).innerHTML = "";
 }
 
+// Loads data for the website and then proceeds to execute @param callback on success, or @param onErr on error
 const loadVizData = async (callback, onErr) => {
     try {
         if(BEST_TEAMS === null) {
@@ -103,6 +102,7 @@ const loadVizData = async (callback, onErr) => {
     }
 }
 
+// Shows the visualization modal for the second section after the user selects a team or player
 const showVizModal = (id, listItemType) => {
     VIZ_MODAL_PARENTS.forEach((vizParentId) => {
         clearInnerHTML(vizParentId);
@@ -110,6 +110,7 @@ const showVizModal = (id, listItemType) => {
     // Reset selected variable for stat per game visualization
     VIZ_MODAL_BAR_VARIABLE = "points";
     let seasonOption = SEASON_START + "-" + SEASON_END[2] + SEASON_END[3];
+    // Case for user selecting a team
     if(listItemType === TEAM) {
         MODAL_TYPE = TEAM;
         renderTeamStats(id, seasonOption);
@@ -118,6 +119,7 @@ const showVizModal = (id, listItemType) => {
         SELECTED_TEAM_ID = id;
         document.getElementById("diverging-line-title").innerHTML = "Winning and Losing Streaks";
     }
+    // Case for user selecting a player
     else if(listItemType === PLAYER) {
         MODAL_TYPE = PLAYER;
         renderPlayerStats(id, seasonOption);
@@ -126,10 +128,12 @@ const showVizModal = (id, listItemType) => {
         SELECTED_PLAYER_ID = id;
         document.getElementById("diverging-line-title").innerHTML = "Plus Minus (+/-)";
     }
+    // Show the modal
     var modal = new bootstrap.Modal(document.getElementById("viz-modal"), {});
     modal.show();   
 }
 
+// Helper function to generate the tooltips for the shot chart 
 const generateShotLogTooltip = (d, type) => {
     let year = parseInt(d.GAME_DATE[0] + d.GAME_DATE[1] + d.GAME_DATE[2] + d.GAME_DATE[3]);
     let month = parseInt(d.GAME_DATE[4] + d.GAME_DATE[5]);
@@ -154,6 +158,7 @@ const generateShotLogTooltip = (d, type) => {
     return tooltipText;
 }
 
+// Renders the shot log onto the visualization modal
 const renderShotLog = async (id, seasonOption, type) => {
     clearInnerHTML("shot-chart-container");
     let startSeason = parseInt(seasonOption.split("-")[0])
@@ -164,6 +169,7 @@ const renderShotLog = async (id, seasonOption, type) => {
         PLAYER_SHOTLOG = await readJsonData("./data/player_shotlog.json");
         shotRoot = PLAYER_SHOTLOG;
     }
+    // Reads files by concatenating the season. This avoids sending a huge file to the client
     let filename = "./data/team_shotlogs/shotlog_" + seasonOption + ".json"
     try {
         TEAM_SHOTLOG = await readJsonData(filename);
@@ -186,18 +192,6 @@ const renderShotLog = async (id, seasonOption, type) => {
         shotData = shotRoot[id] === undefined ? [] : shotRoot[id];
     }
 
-    // let shotPercentagesByZone = {};
-    // let totalShots = shotData.length;
-    // shotData.forEach((shot) => {
-    //     let zone = shot.SHOT_ZONE_AREA + ", " + shot.SHOT_TYPE 
-    //     if(shotPercentagesByZone[zone] === undefined) {
-    //         shotPercentagesByZone[zone] = 1;
-    //     }
-    //     else {
-    //         shotPercentagesByZone[zone] = shotPercentagesByZone[zone] + 1;
-    //     }
-    // });
-
     let xMin = d3.min(shotData, (d) => {return parseInt(d.LOC_X)});
     let xMax = d3.max(shotData, (d) => {return parseInt(d.LOC_X)});
 
@@ -215,12 +209,10 @@ const renderShotLog = async (id, seasonOption, type) => {
             .attr("width", width + MARGIN.left + MARGIN.right)
             .attr("height", height + MARGIN.top + MARGIN.bottom)
 
-    // let g = svg.append("g")
-    //     .attr("transform", "translate(" + MARGIN.left + "," + MARGIN.top + ")");
-
     drawBasketballCourt(svg, shotData, type);
 }
 
+// Plus/minus diverging line chart
 const renderPlayerPlusMinus = async (playerId, seasonOption) => {
     if(PLAYER_STATS === null) {
         PLAYER_STATS = await readJsonData("./data/player_gamelog.json");
@@ -240,7 +232,6 @@ const renderPlayerPlusMinus = async (playerId, seasonOption) => {
     });
 
     let yVals = gameData.map((d) => {
-        // return d.PLUS_MINUS === null ? 0 : parseInt(d.PLUS_MINUS);
         return d;
     });
 
@@ -289,6 +280,7 @@ const renderPlayerPlusMinus = async (playerId, seasonOption) => {
         ).selectAll(".tick text")
             .attr("font-size", "12");
 
+    // Render circle at each x,y coord intersection
     svg.selectAll("circle")
         .data(yVals)
         .enter()
@@ -347,6 +339,7 @@ const renderPlayerPlusMinus = async (playerId, seasonOption) => {
     parentContainer.appendChild(row);
 }
 
+// Renders bar chart of player stats in the selected season
 const renderPlayerStats = async (playerId, seasonOption) => {
     clearInnerHTML("team-stats");
 
@@ -460,11 +453,12 @@ const renderPlayerStats = async (playerId, seasonOption) => {
                     .style("opacity", 0);	
             });
 
+    // Render the dropdown for the user to select different stats
     renderVizModalVarDropdown();
 }
 
 /**
- * 
+ * Renders the list group for the list of players and teams in section 2
  * @param {*} data - Array of data 
  * @param {*} labelKey - Key of the label to display on list group element
  * @param {*} onClick - Event handler for when user selects the list element. Gets called as onClick(e, item, idKey)
@@ -487,6 +481,7 @@ const renderListGroup = (data, labelKey, idKey, onClick, parentId, listItemType)
     parentElement.appendChild(listGroup);
 }
 
+// Helper function to even out the list of players and teams. Ensures all player and team lists are of equal length
 const evenOutList = (arr, maxSize, labelKey) => {
     if(arr.length < maxSize) {
         let diff = maxSize - arr.length;
@@ -498,7 +493,9 @@ const evenOutList = (arr, maxSize, labelKey) => {
     }
 }
 
+// Onclick function for user clicking a team or player
 const onClickListItem = (e, item, idKey, listItemType) => {
+    // Handle user clicking a list group with no corresponding ID (occurs due to evening out the lists)
     if(item[idKey] === undefined) {
         return;
     }
@@ -506,6 +503,7 @@ const onClickListItem = (e, item, idKey, listItemType) => {
     showVizModal(item[idKey], listItemType);
 }
 
+// Renders best team and player lists
 const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd, isStart) => {
     // Start loader 
     document.getElementById("section2-loader").style.display = "inline-block";
@@ -540,6 +538,7 @@ const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd, isStart) => {
             }
         }
     });
+    // Sort teams by standing
     bestEastTeams.sort((team1, team2) => {
         return parseInt(team1.standing) - parseInt(team2.standing);
     });
@@ -608,6 +607,7 @@ const renderBestTeamsAndPlayers = async (seasonStart, seasonEnd, isStart) => {
     }
 }
 
+// Function fired when user selects a new season from the season dropdown
 const onSelectSeasonDropdown = (e, seasonOption, seasonStart, seasonEnd) => {
     let dropdownButton = document.getElementById("season-dropdown-button");
     dropdownButton.innerHTML = seasonOption;
@@ -617,6 +617,7 @@ const onSelectSeasonDropdown = (e, seasonOption, seasonStart, seasonEnd) => {
     SEASON_END = seasonEnd;
 }
 
+// Renders the season dropdown 
 const renderSeasonDropdownOptions = () => {
     let startYear = 1980;
     let endYear = 2020;
@@ -646,14 +647,13 @@ const renderSeasonDropdownOptions = () => {
             col.classList.add("col-md-3");
             itemCount = 0;
         }
-        // dropdownMenu.appendChild(dropdownItem);
-
         startYear++;
     }
     row.appendChild(col);
     dropdownMenu.appendChild(row);
 }
 
+// Function fired when user selects the dropdown to change the stat in the visualization modal
 const onSelectVizModalVarDropdown = (selectedVar, display) => {
     let seasonOption = SEASON_START + "-" + SEASON_END[2] + SEASON_END[3];
     VIZ_MODAL_BAR_VARIABLE = selectedVar;
@@ -666,6 +666,7 @@ const onSelectVizModalVarDropdown = (selectedVar, display) => {
     document.getElementById("variable-dropdown-button").innerHTML = display;
 }
 
+// Renders the dropdown in the viz modal for the users to select different stats for the team or player to be graphed
 const renderVizModalVarDropdown = () => {
     let dropdownButton = document.getElementById("variable-dropdown-button");
     let dropdownMenu = document.getElementById("variable-dropdown-menu");
@@ -691,6 +692,7 @@ const renderVizModalVarDropdown = () => {
     });
 }
 
+// Renders the team's stats per game bar chart in the selected season
 const renderTeamStats = async (teamId, seasonOption) => {
     clearInnerHTML("team-stats");
 
@@ -801,6 +803,7 @@ const renderTeamStats = async (teamId, seasonOption) => {
     renderVizModalVarDropdown();
 }
 
+// Renders win/loss bar chart for team
 const renderWinLossBarChart = async (teamId, seasonOption) => {
     if(TEAM_STATS === null) {
         TEAM_STATS = await readJsonData("./data/team_stats_details.json");
@@ -1180,36 +1183,4 @@ const drawBasketballCourt = (svg, shotData, type) => {
     }
     
     drawCourt();
-}
-
-const renderTeamShotZoneChart = async (id, seasonOption, o) => {
-    clearInnerHTML("shot-chart-container");
-    if(TEAM_SHOTLOG === null) {
-        TEAM_SHOTLOG = await readJsonData("./data/team_shotlog.json");
-    }
-    let startSeason = parseInt(seasonOption.split("-")[0])
-    let endSeason = (startSeason + 1).toString();
-    seasonOption = startSeason.toString() + "-" + endSeason;
-    let shotData = TEAM_SHOTLOG[seasonOption] === undefined ? [] : TEAM_SHOTLOG[seasonOption][id];
-
-    const courtMapping = {
-        "Center(C), 2PT Field Goal": {
-            x: (o.courtWidth/2 - 3), 
-            y: (o.threePointCutoffLength - (o.threePointRadius - o.freeThrowLineLength) + 3)
-        },
-        "Center(C), 3PT Field Goal": {
-            x: (o.courtWidth/2 - 3), 
-            y: (o.threePointCutoffLength - (o.threePointRadius - o.freeThrowLineLength) - 3)
-        },
-        "Left Side Center(LC), 2PT Field Goal": {x: 0, y: 0},
-        "Left Side Center(LC), 3PT Field Goal": {x: 0, y: 0},
-        "Left Side(L), 2PT Field Goal": {x: 0, y: 0},
-        "Left Side(L), 3PT Field Goal": {x: 0, y: 0},
-        "Right Side Center(RC), 2PT Field Goal": {x: 0, y: 0},
-        "Right Side Center(RC), 3PT Field Goal": {x: 0, y: 0},
-        "Right Side(R), 2PT Field Goal": {x: 0, y: 0},
-        "Right Side(R), 3PT Field Goal": {x: 0, y: 0}
-    }
-
-
 }
